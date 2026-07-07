@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="../ServianOps.Application/ServianOps.Application.csproj" Id="c3cee3b2-ef1e-47ad-b2d4-b3d5bfc2dedd" />
+  <Project Path="../ServianOps.Common/ServianOps.Common.csproj" Id="86c3ee8f-7f94-42fa-b3c2-80c942bec665" />
+  <Project Path="../ServianOps.Core/ServianOps.Core.csproj" Id="0447f120-ec70-42e7-9753-8b4736ac0502" />
+  <Project Path="../ServianOps.EntityFrameworkCore/ServianOps.EntityFrameworkCore.csproj" Id="15c766d8-301b-4065-bd0b-d6cdc0cb13b6" />
   <Project Path="ServianOpsAPI.csproj" />
 </Solution>
