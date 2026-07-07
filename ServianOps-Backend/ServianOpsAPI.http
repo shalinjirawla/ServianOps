@@ -1,0 +1,6 @@
+@ServianOpsAPI_HostAddress = http://localhost:5141
+
+GET {{ServianOpsAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

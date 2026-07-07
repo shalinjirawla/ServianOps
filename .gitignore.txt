@@ -1,0 +1,39 @@
+## ####################################
+## .NET / Visual Studio GitIgnore
+## ####################################
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+漏*
+.vs/
+UserSecrets/
+appsettings.Development.json
+
+## ####################################
+## Angular / Node GitIgnore
+## ####################################
+node_modules/
+/dist/
+/.angular/
+.tmp/
+.sass-cache/
+connect.lock
+coverage/
+libpeerconnection.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+## ####################################
+## IDEs and Editors
+## ####################################
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
