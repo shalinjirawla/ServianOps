@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ServianOps-Backend.Application": {
+      "commandName": "Project",
+      "debugEngines": "managed",
+      "hotReloadEnabled": false
+    }
+  }
+}
