@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ServianOps-Backend.Application/ServianOps-Backend.Application.csproj" />
+  <Project Path="ServianOps-Backend.Common/ServianOps-Backend.Common.csproj" />
+  <Project Path="ServianOps-Backend.Core/ServianOps-Backend.Core.csproj" />
+  <Project Path="ServianOps-Backend.EntityFramework/ServianOps-Backend.EntityFramework.csproj" />
+  <Project Path="ServianOps-Backend/ServianOps-Backend.csproj" />
+</Solution>
