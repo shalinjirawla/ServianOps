@@ -97,6 +97,20 @@ namespace ServianOps_Backend.Application.Services
                 CompanyName = tenant.CompanyName,
 
                 PlanId = tenant.PlanId,
+                Plan = tenant.Plan != null ? new ServianOps_Backend.Application.DTOs.Plan.PlanDto 
+                { 
+                    Id = tenant.Plan.Id, 
+                    PlanName = tenant.Plan.PlanName, 
+                    MaxUsers = tenant.Plan.MaxUsers, 
+                    MaxProjects = tenant.Plan.MaxProjects, 
+                    MaxStorageGB = tenant.Plan.MaxStorageGB, 
+                    Price = tenant.Plan.Price, 
+                    BillingCycle = tenant.Plan.BillingCycle, 
+                    IsTrialAvailable = tenant.Plan.IsTrialAvailable, 
+                    TrialDays = tenant.Plan.TrialDays, 
+                    IsActive = tenant.Plan.IsActive, 
+                    CreationTime = tenant.Plan.CreationTime 
+                } : null,
                 IsActive = tenant.IsActive
             };
         }
@@ -113,6 +127,20 @@ namespace ServianOps_Backend.Application.Services
                 CompanyName = tenant.CompanyName,
 
                 PlanId = tenant.PlanId,
+                Plan = tenant.Plan != null ? new ServianOps_Backend.Application.DTOs.Plan.PlanDto 
+                { 
+                    Id = tenant.Plan.Id, 
+                    PlanName = tenant.Plan.PlanName, 
+                    MaxUsers = tenant.Plan.MaxUsers, 
+                    MaxProjects = tenant.Plan.MaxProjects, 
+                    MaxStorageGB = tenant.Plan.MaxStorageGB, 
+                    Price = tenant.Plan.Price, 
+                    BillingCycle = tenant.Plan.BillingCycle, 
+                    IsTrialAvailable = tenant.Plan.IsTrialAvailable, 
+                    TrialDays = tenant.Plan.TrialDays, 
+                    IsActive = tenant.Plan.IsActive, 
+                    CreationTime = tenant.Plan.CreationTime 
+                } : null,
                 IsActive = tenant.IsActive
             };
         }
@@ -125,6 +153,20 @@ namespace ServianOps_Backend.Application.Services
                 TenancyName = t.TenancyName,
                 CompanyName = t.CompanyName,
                 PlanId = t.PlanId,
+                Plan = t.Plan != null ? new ServianOps_Backend.Application.DTOs.Plan.PlanDto 
+                { 
+                    Id = t.Plan.Id, 
+                    PlanName = t.Plan.PlanName, 
+                    MaxUsers = t.Plan.MaxUsers, 
+                    MaxProjects = t.Plan.MaxProjects, 
+                    MaxStorageGB = t.Plan.MaxStorageGB, 
+                    Price = t.Plan.Price, 
+                    BillingCycle = t.Plan.BillingCycle, 
+                    IsTrialAvailable = t.Plan.IsTrialAvailable, 
+                    TrialDays = t.Plan.TrialDays, 
+                    IsActive = t.Plan.IsActive, 
+                    CreationTime = t.Plan.CreationTime 
+                } : null,
                 IsActive = t.IsActive
             }).ToList();
         }
