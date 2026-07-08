@@ -18,8 +18,18 @@ namespace ServianOps_Backend.EntityFramework.Repositories
             // IgnoreQueryFilters is critical here because if the tenant is not yet resolved, 
             // the global query filter would block it.
             return await _dbContext.Tenants
+                .Include(t => t.Plan)
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(t => t.TenancyName == TenancyName);
+        }
+        public override async Task<IReadOnlyList<Tenant>> GetPagedAsync(int pageNumber, int pageSize)
+        {
+            return await _dbContext.Tenants
+                .Include(t => t.Plan)
+                .AsNoTracking()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
     }
 }

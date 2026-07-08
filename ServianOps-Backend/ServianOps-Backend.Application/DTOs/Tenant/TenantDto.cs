@@ -1,4 +1,5 @@
 using System;
+using ServianOps_Backend.Application.DTOs.Plan;
 
 namespace ServianOps_Backend.Application.DTOs.Tenant
 {
@@ -9,6 +10,8 @@ namespace ServianOps_Backend.Application.DTOs.Tenant
         public string TenancyName { get; set; }
 
         public long? PlanId { get; set; }
+        public PlanDto Plan { get; set; }
+
         public DateTime? SubscriptionStartDate { get; set; }
         public DateTime? SubscriptionEndDate { get; set; }
         public bool IsTrial { get; set; }

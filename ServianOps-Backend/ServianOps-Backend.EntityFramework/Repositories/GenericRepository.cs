@@ -28,7 +28,7 @@ namespace ServianOps_Backend.EntityFramework.Repositories
             return await _dbContext.Set<T>().AsNoTracking().ToListAsync();
         }
 
-        public async Task<IReadOnlyList<T>> GetPagedAsync(int pageNumber, int pageSize)
+        public virtual async Task<IReadOnlyList<T>> GetPagedAsync(int pageNumber, int pageSize)
         {
             return await _dbContext.Set<T>()
                 .AsNoTracking()
