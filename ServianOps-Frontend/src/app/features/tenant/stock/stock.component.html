@@ -1,0 +1,53 @@
+<div class="stock-container">
+  
+  <div class="module-header">
+    <div class="header-text">
+      <h2>Stock & Inventory Ledger</h2>
+      <p>Monitor spare parts, manage critical alerts, and audit serial trackers.</p>
+    </div>
+    <button class="so-btn so-btn-primary action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Adjust Stock</span>
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="so-table">
+      <thead>
+        <tr>
+          <th>Part Number</th>
+          <th>Item Description</th>
+          <th>Category</th>
+          <th>Available Quantity</th>
+          <th>Safety Stock Minimum</th>
+          <th>Inventory Status</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of stock(); track item.id) {
+          <tr>
+            <td><code class="code-badge">{{ item.partNo }}</code></td>
+            <td><strong>{{ item.name }}</strong></td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.minAlertLevel }}</td>
+            <td>
+              <span class="status-badge" [class]="item.status.toLowerCase().replace(/ /g, '-')">
+                {{ item.status }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="actions-group">
+                <button class="action-icon-btn edit" title="Stock adjustment Log">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+</div>

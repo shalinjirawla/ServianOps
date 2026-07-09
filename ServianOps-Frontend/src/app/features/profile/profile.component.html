@@ -1,0 +1,96 @@
+<div class="profile-container animate-fade-in">
+
+  <div class="profile-grid">
+    
+    <!-- Left Card: Meta summary information -->
+    <div class="profile-meta-card premium-card">
+      <div class="avatar-large">
+        {{ authService.currentUser()?.email?.charAt(0)?.toUpperCase() || 'U' }}
+      </div>
+      <h3 class="user-display-name">{{ fullName }}</h3>
+      <p class="user-display-title">{{ title }}</p>
+      
+      <div class="status-tags">
+        <span class="role-badge">{{ authService.currentUser()?.role }}</span>
+        @if (authService.currentUser()?.tenantId) {
+          <span class="tenant-badge">Tenant ID: #{{ authService.currentUser()?.tenantId }}</span>
+        } @else {
+          <span class="tenant-badge host">Host Account</span>
+        }
+      </div>
+
+      <div class="metadata-rows-list">
+        <div class="meta-row">
+          <span class="label">Login Email</span>
+          <span class="val">{{ authService.currentUser()?.email }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="label">Platform Status</span>
+          <span class="val success-text">Active Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Card: Form configurations -->
+    <div class="profile-form-card premium-card">
+      <h3>Personal Specifications</h3>
+      <p class="section-desc">Manage display credentials and professional information.</p>
+
+      <form (submit)="saveProfileDetails(); $event.preventDefault();" class="profile-form">
+        <div class="form-row-grid">
+          <div class="so-form-group">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" class="so-input" [(ngModel)]="fullName" name="fullName" />
+          </div>
+          <div class="so-form-group">
+            <label for="profTitle">Job Title / Designation</label>
+            <input type="text" id="profTitle" class="so-input" [(ngModel)]="title" name="title" />
+          </div>
+        </div>
+
+        <div class="so-form-group max-w-md">
+          <label for="profPhone">Contact Number</label>
+          <input type="text" id="profPhone" class="so-input" [(ngModel)]="phoneNumber" name="phoneNumber" />
+        </div>
+
+        <button type="submit" class="so-btn so-btn-primary">Update Profile</button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Bottom Card: Active Logins tracker -->
+  <div class="active-sessions-panel premium-card mt-6">
+    <div class="panel-header-desc">
+      <h3>Active Credentials Sessions</h3>
+      <p>Monitor devices currently holding access tokens into this account workspace.</p>
+    </div>
+
+    <div class="sessions-list mt-4">
+      @for (session of sessions(); track session.id) {
+        <div class="session-row-card" [class.current]="session.current">
+          <div class="session-icon-col">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <div class="session-details">
+            <div class="details-top">
+              <h4>{{ session.device }}</h4>
+              @if (session.current) {
+                <span class="current-badge">THIS SESSION</span>
+              }
+            </div>
+            <p class="details-sub">{{ session.location }} • IP: {{ session.ip }}</p>
+          </div>
+          <div class="session-actions">
+            @if (!session.current) {
+              <button class="so-btn so-btn-secondary terminate-btn" (click)="terminateSession(session.id)">
+                Revoke Key
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+</div>

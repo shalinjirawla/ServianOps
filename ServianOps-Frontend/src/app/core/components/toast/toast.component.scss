@@ -1,0 +1,118 @@
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 400px;
+  width: calc(100vw - 3rem);
+}
+
+.toast-card {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-premium);
+  background: rgba(var(--bg-card-rgb, 255, 255, 255), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--border-light-rgb, 224, 224, 224), 0.5);
+  transition: all var(--transition-normal);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  &.success {
+    border-left: 4px solid var(--success);
+    .toast-icon { color: var(--success); }
+  }
+
+  &.error {
+    border-left: 4px solid var(--danger);
+    .toast-icon { color: var(--danger); }
+  }
+
+  &.warning {
+    border-left: 4px solid var(--warning);
+    .toast-icon { color: var(--warning); }
+  }
+
+  &.info {
+    border-left: 4px solid var(--primary-color);
+    .toast-icon { color: var(--primary-color); }
+  }
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.toast-message {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-grow: 1;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+  }
+
+  .icon {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+// Global dark mode override helper since body might be .dark
+body.dark {
+  .toast-card {
+    background: rgba(22, 22, 28, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    
+    &.success { border-left: 4px solid var(--success); }
+    &.error { border-left: 4px solid var(--danger); }
+    &.warning { border-left: 4px solid var(--warning); }
+    &.info { border-left: 4px solid var(--primary-color); }
+  }
+  
+  .toast-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
