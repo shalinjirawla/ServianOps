@@ -23,6 +23,14 @@ builder.Services.AddFluentValidationAutoValidation();
 // Register all validators from the Application assembly
 builder.Services.AddValidatorsFromAssemblyContaining<ServianOps_Backend.Application.Validations.LoginDtoValidator>();
 builder.Services.AddEndpointsApiExplorer();
+
+//Enable CORS
+
+builder.Services.AddCors(c =>
+{
+    c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "ServianOps API", Version = "v1" });
@@ -98,6 +106,8 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 
+
+
 var app = builder.Build();
 
 // Seed Database
@@ -119,7 +129,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowOrigin");
 app.UseAuthentication();
 app.UseAuthorization();
 
