@@ -1,0 +1,362 @@
+<div class="auth-page-container">
+  <!-- Glowing Abstract Grid Background -->
+  <div class="aurora-grid">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
+  <!-- Header Theme Control -->
+  <div class="auth-top-actions">
+    <button class="theme-toggle-btn" (click)="themeService.toggleTheme()" [title]="themeService.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+      @if (themeService.isDarkMode()) {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      }
+    </button>
+  </div>
+
+  <!-- Main Responsive Container -->
+  <div class="auth-content-box animate-scale-in">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logo-svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h2 class="brand-title">ServianOps</h2>
+      <p class="brand-subtitle">High-Performance Field Operations Platform</p>
+    </div>
+
+    <!-- Alert Feedback Panel -->
+    @if (sessionExpiredMessage()) {
+      <div class="auth-alert alert-info">
+        <svg class="alert-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>{{ sessionExpiredMessage() }}</span>
+      </div>
+    }
+
+    @if (apiError()) {
+      <div class="auth-alert alert-error">
+        <svg class="alert-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>{{ apiError() }}</span>
+      </div>
+    }
+
+    <!-- View: LOGIN -->
+    @if (activeView() === 'LOGIN') {
+      <div class="view-panel">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="floating-group">
+            <input 
+              type="text" 
+              id="tenancyName" 
+              formControlName="tenancyName" 
+              placeholder=" "
+              class="so-input"
+              [attr.disabled]="isLoading() ? true : null"
+            />
+            <label for="tenancyName">Company Code</label>
+            <span class="field-info">Leave blank for SuperAdmin login</span>
+          </div>
+
+          <div class="floating-group">
+            <input 
+              type="email" 
+              id="email" 
+              formControlName="email" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(loginForm, 'email')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="email">Email Address</label>
+            @if (isFieldInvalid(loginForm, 'email')) {
+              <div class="error-text">
+                @if (loginForm.get('email')?.errors?.['required']) { Email is required. }
+                @if (loginForm.get('email')?.errors?.['email']) { Enter a valid email format. }
+              </div>
+            }
+          </div>
+
+          <div class="floating-group password-group">
+            <input 
+              [type]="showPassword() ? 'text' : 'password'" 
+              id="password" 
+              formControlName="password" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(loginForm, 'password')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="password">Password</label>
+            <button 
+              type="button" 
+              class="password-toggle" 
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              tabindex="-1"
+            >
+              @if (showPassword()) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+            @if (isFieldInvalid(loginForm, 'password')) {
+              <div class="error-text">
+                @if (loginForm.get('password')?.errors?.['required']) { Password is required. }
+                @if (loginForm.get('password')?.errors?.['minlength']) { Must be at least 6 characters. }
+              </div>
+            }
+          </div>
+
+          <div class="form-options">
+            <label class="custom-checkbox">
+              <input type="checkbox" formControlName="rememberMe" />
+              <span class="box-indicator"></span>
+              <span class="label-text">Remember details</span>
+            </label>
+            <a href="javascript:void(0)" class="nav-text-link" (click)="switchView('FORGOT')">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="so-btn so-btn-primary w-full submit-btn" [disabled]="loginForm.invalid || isLoading()">
+            @if (isLoading()) {
+              <span class="btn-spinner"></span>
+              <span>Authenticating...</span>
+            } @else {
+              <span>Sign In</span>
+            }
+          </button>
+        </form>
+
+        <div class="divider-text"><span>Or sign in with</span></div>
+
+        <div class="social-grid">
+          <button type="button" class="social-btn" (click)="triggerSocialLogin('Google')" title="Sign in with Google">
+            <svg viewBox="0 0 24 24" class="social-icon" fill="currentColor">
+              <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.133 1 1.18 5.927 1.18 12s4.953 11 11.06 11c6.373 0 10.596-4.47 10.596-10.75 0-.726-.08-1.284-.176-1.965H12.24z"/>
+            </svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="social-btn" (click)="triggerSocialLogin('Apple')" title="Sign in with Apple">
+            <svg viewBox="0 0 24 24" class="social-icon" fill="currentColor">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.7-1.13 1.84-1.01 2.95.83-.02 1.94-.53 2.84-1.34z"/>
+            </svg>
+            <span>Apple</span>
+          </button>
+          <button type="button" class="social-btn" (click)="triggerSocialLogin('GitHub')" title="Sign in with GitHub">
+            <svg viewBox="0 0 24 24" class="social-icon" fill="currentColor">
+              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+            </svg>
+            <span>GitHub</span>
+          </button>
+        </div>
+
+        <p class="auth-footer-text">
+          New to ServianOps? 
+          <a href="javascript:void(0)" class="nav-text-link" (click)="switchView('SIGNUP')">Create corporate account</a>
+        </p>
+      </div>
+    }
+
+    <!-- View: SIGNUP -->
+    @if (activeView() === 'SIGNUP') {
+      <div class="view-panel">
+        <form [formGroup]="signUpForm" (ngSubmit)="onSignUpSubmit()" novalidate>
+          <div class="floating-group">
+            <input 
+              type="text" 
+              id="signupTenancy" 
+              formControlName="tenancyName" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(signUpForm, 'tenancyName')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="signupTenancy">Company Name/Tenancy</label>
+            @if (isFieldInvalid(signUpForm, 'tenancyName')) {
+              <div class="error-text">Tenancy name is required.</div>
+            }
+          </div>
+
+          <div class="floating-group">
+            <input 
+              type="email" 
+              id="signupEmail" 
+              formControlName="email" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(signUpForm, 'email')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="signupEmail">Work Email Address</label>
+            @if (isFieldInvalid(signUpForm, 'email')) {
+              <div class="error-text">Enter a valid email.</div>
+            }
+          </div>
+
+          <div class="floating-group password-group">
+            <input 
+              [type]="showPassword() ? 'text' : 'password'" 
+              id="signupPassword" 
+              formControlName="password" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(signUpForm, 'password')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="signupPassword">Password</label>
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" tabindex="-1">
+              @if (showPassword()) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+            @if (isFieldInvalid(signUpForm, 'password')) {
+              <div class="error-text">Must be at least 6 characters.</div>
+            }
+          </div>
+
+          <div class="floating-group password-group">
+            <input 
+              [type]="showConfirmPassword() ? 'text' : 'password'" 
+              id="signupConfirmPassword" 
+              formControlName="confirmPassword" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(signUpForm, 'confirmPassword') || signUpForm.hasError('mismatch')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="signupConfirmPassword">Confirm Password</label>
+            <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()" tabindex="-1">
+              @if (showConfirmPassword()) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+            @if (signUpForm.hasError('mismatch') && signUpForm.get('confirmPassword')?.touched) {
+              <div class="error-text">Passwords must match.</div>
+            }
+          </div>
+
+          <div class="form-options">
+            <label class="custom-checkbox">
+              <input type="checkbox" formControlName="agreeTerms" />
+              <span class="box-indicator"></span>
+              <span class="label-text">I accept the Service Agreement & Privacy Policy</span>
+            </label>
+          </div>
+
+          <button type="submit" class="so-btn so-btn-primary w-full submit-btn" [disabled]="signUpForm.invalid || isLoading()">
+            @if (isLoading()) {
+              <span class="btn-spinner"></span>
+              <span>Registering Organization...</span>
+            } @else {
+              <span>Submit Registration</span>
+            }
+          </button>
+        </form>
+
+        <p class="auth-footer-text">
+          Already registered? 
+          <a href="javascript:void(0)" class="nav-text-link" (click)="switchView('LOGIN')">Sign In</a>
+        </p>
+      </div>
+    }
+
+    <!-- View: FORGOT -->
+    @if (activeView() === 'FORGOT') {
+      <div class="view-panel">
+        <p class="view-description">
+          Enter your email and we'll dispatch link updates to safely recover or reset your security configurations.
+        </p>
+
+        <form [formGroup]="forgotForm" (ngSubmit)="onForgotSubmit()" novalidate>
+          <div class="floating-group">
+            <input 
+              type="email" 
+              id="forgotEmail" 
+              formControlName="email" 
+              placeholder=" "
+              class="so-input"
+              [class.has-error]="isFieldInvalid(forgotForm, 'email')"
+              [attr.disabled]="isLoading() ? true : null"
+              required
+            />
+            <label for="forgotEmail">Corporate Email Address</label>
+            @if (isFieldInvalid(forgotForm, 'email')) {
+              <div class="error-text">Enter a valid email.</div>
+            }
+          </div>
+
+          <button type="submit" class="so-btn so-btn-primary w-full submit-btn" [disabled]="forgotForm.invalid || isLoading()">
+            @if (isLoading()) {
+              <span class="btn-spinner"></span>
+              <span>Dispatching email...</span>
+            } @else {
+              <span>Send Recovery Code</span>
+            }
+          </button>
+        </form>
+
+        <p class="auth-footer-text">
+          Back to 
+          <a href="javascript:void(0)" class="nav-text-link" (click)="switchView('LOGIN')">Sign In</a>
+        </p>
+      </div>
+    }
+
+    <!-- View: OTP -->
+    @if (activeView() === 'OTP') {
+      <div class="view-panel">
+        <p class="view-description text-center">
+          We have sent a verification code to <br/><strong>{{ otpEmail() || 'your email' }}</strong>. Enter the digits below:
+        </p>
+
+        <form [formGroup]="otpForm" (ngSubmit)="onOtpSubmit()" novalidate>
+          <div class="otp-inputs-grid">
+            <input type="text" id="otp-1" formControlName="code1" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 1)" (keydown)="onOtpKeyDown($event, 1)" autocomplete="off" />
+            <input type="text" id="otp-2" formControlName="code2" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 2)" (keydown)="onOtpKeyDown($event, 2)" autocomplete="off" />
+            <input type="text" id="otp-3" formControlName="code3" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 3)" (keydown)="onOtpKeyDown($event, 3)" autocomplete="off" />
+            <input type="text" id="otp-4" formControlName="code4" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 4)" (keydown)="onOtpKeyDown($event, 4)" autocomplete="off" />
+            <input type="text" id="otp-5" formControlName="code5" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 5)" (keydown)="onOtpKeyDown($event, 5)" autocomplete="off" />
+            <input type="text" id="otp-6" formControlName="code6" class="otp-input" maxlength="1" (keyup)="onOtpKeyUp($event, 6)" (keydown)="onOtpKeyDown($event, 6)" autocomplete="off" />
+          </div>
+
+          <button type="submit" class="so-btn so-btn-primary w-full submit-btn mt-6" [disabled]="otpForm.invalid || isLoading()">
+            @if (isLoading()) {
+              <span class="btn-spinner"></span>
+              <span>Verifying Identity...</span>
+            } @else {
+              <span>Confirm Verification</span>
+            }
+          </button>
+        </form>
+
+        <p class="resend-text mt-4 text-center">
+          Didn't receive code? 
+          <a href="javascript:void(0)" class="nav-text-link" (click)="resendOtp()">Resend OTP Code</a>
+        </p>
+
+        <p class="auth-footer-text">
+          Or return to 
+          <a href="javascript:void(0)" class="nav-text-link" (click)="switchView('LOGIN')">Sign In</a>
+        </p>
+      </div>
+    }
+
+  </div>
+</div>

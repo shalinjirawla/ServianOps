@@ -1,0 +1,73 @@
+<div class="invoices-container">
+  
+  <div class="module-header">
+    <div class="header-text">
+      <h2>Invoicing & billing Ledger</h2>
+      <p>Issue billings, check outstanding customer balances, and log financial logs.</p>
+    </div>
+    <button class="so-btn so-btn-primary action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Raise Invoice</span>
+    </button>
+  </div>
+
+  <!-- Billing summary cards -->
+  <div class="summary-cards">
+    <div class="summary-card total">
+      <span class="card-label">Total Invoiced</span>
+      <span class="card-val">${{ getTotalAmount() | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-card paid">
+      <span class="card-label">Total Received</span>
+      <span class="card-val">${{ getPaidAmount() | number:'1.2-2' }}</span>
+    </div>
+    <div class="summary-card outstanding">
+      <span class="card-label">Outstanding Balance</span>
+      <span class="card-val">${{ getUnpaidAmount() | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="so-table">
+      <thead>
+        <tr>
+          <th>Invoice No.</th>
+          <th>Customer Account</th>
+          <th>Invoice Amount</th>
+          <th>Issue Date</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (inv of invoices(); track inv.id) {
+          <tr>
+            <td><code class="code-badge">{{ inv.invoiceNo }}</code></td>
+            <td><strong>{{ inv.customer }}</strong></td>
+            <td><strong>${{ inv.amount | number:'1.2-2' }}</strong></td>
+            <td>{{ inv.issueDate }}</td>
+            <td>{{ inv.dueDate }}</td>
+            <td>
+              <span class="status-badge" [class]="inv.status.toLowerCase()">
+                {{ inv.status }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="actions-group">
+                <button class="action-icon-btn edit" title="Download PDF">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-row">No invoices generated for this period.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+</div>

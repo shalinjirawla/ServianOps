@@ -1,0 +1,56 @@
+<div class="engineers-container">
+  
+  <div class="module-header">
+    <div class="header-text">
+      <h2>Field Engineers crew</h2>
+      <p>Configure field scheduling, engineer credentials, and dispatch contacts.</p>
+    </div>
+    <button class="so-btn so-btn-primary action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add Engineer</span>
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="so-table">
+      <thead>
+        <tr>
+          <th>Engineer</th>
+          <th>Corporate Email</th>
+          <th>Mobile Phone Line</th>
+          <th>Status</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (eng of engineers(); track eng.id) {
+          <tr>
+            <td>
+              <div class="avatar-row">
+                <div class="avatar-circle">
+                  {{ eng.name.charAt(0) }}
+                </div>
+                <strong>{{ eng.name }}</strong>
+              </div>
+            </td>
+            <td>{{ eng.email }}</td>
+            <td>{{ eng.phone }}</td>
+            <td>
+              <span class="status-badge" [class]="eng.status.toLowerCase().replace(' ', '-')">
+                {{ eng.status }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <div class="actions-group">
+                <button class="action-icon-btn edit" title="Edit Profile">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+</div>

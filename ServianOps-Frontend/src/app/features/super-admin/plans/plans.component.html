@@ -1,0 +1,198 @@
+<div class="plans-viewport">
+
+  <!-- Header Area -->
+  <div class="module-header">
+    <div class="header-text">
+      <h2>SaaS Subscription Plans</h2>
+      <p>Configure pricing, user caps, and feature ceilings for corporate clients.</p>
+    </div>
+    <button class="so-btn so-btn-primary action-btn" (click)='openCreateModal()'>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Create Plan</span>
+    </button>
+  </div>
+
+  @if (successMessage() && !isModalOpen()) {
+    <div class="alert alert-success mt-2">{{ successMessage() }}</div>
+  }
+  @if (errorMessage() && !isModalOpen()) {
+    <div class="alert alert-danger mt-2">{{ errorMessage() }}</div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loader-container">
+      <div class="spinner"></div>
+      <p>Loading active subscription plans...</p>
+    </div>
+  } @else {
+    <!-- Plans Table -->
+    <div class="table-container">
+      <table class="so-table">
+        <thead>
+          <tr>
+            <th>Plan Name</th>
+            <th>Monthly Price</th>
+            <th>Billing Cycle</th>
+            <th>Limits (Users / Projects)</th>
+            <th>Storage Limit</th>
+            <th>Trial Mode</th>
+            <th>Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plan of plansList(); track plan.id) {
+            <tr>
+              <td><strong>{{ plan.planName }}</strong></td>
+              <td><span class="price-highlight">${{ plan.price }}</span></td>
+              <td>{{ plan.billingCycle }}</td>
+              <td>
+                <span class="limit-badge">{{ plan.maxUsers === 99999 ? 'Unlimited' : plan.maxUsers + ' Users' }}</span>
+                <span class="limit-badge secondary">{{ plan.maxProjects === 99999 ? 'Unlimited' : plan.maxProjects + ' Projs' }}</span>
+              </td>
+              <td>{{ plan.maxStorageGB === 99999 ? 'Unlimited' : plan.maxStorageGB + ' GB' }}</td>
+              <td>
+                @if (plan.isTrialAvailable) {
+                  <span class="trial-label">{{ plan.trialDays }} Days Trial</span>
+                } @else {
+                  <span class="trial-label none">No Trial</span>
+                }
+              </td>
+              <td>
+                <span class="status-badge" [class.active]="plan.isActive">
+                  {{ plan.isActive ? 'Active' : 'Archived' }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <div class="actions-group">
+                  <button class="action-icon-btn edit" title="Edit Plan" (click)='openEditModal(plan)'>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="action-icon-btn delete" title="Delete Plan" (click)='deletePlan(plan.id)'>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="empty-row">No subscription plans mapped. Please create one to start onboarding tenants.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Creation / Editing Modal Popup -->
+  @if (isModalOpen()) {
+    <div class="modal-backdrop animate-fade-in" (click)='closeModal()'></div>
+    <div class="modal-container animate-fade-in" role="dialog" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h3 id="modal-title">{{ editingPlanId() ? 'Modify Subscription Plan' : 'Create Subscription Plan' }}</h3>
+        <button class="close-btn" (click)='closeModal()'>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form [formGroup]="planForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="modal-body">
+          
+          @if (errorMessage()) {
+            <div class="alert alert-danger">{{ errorMessage() }}</div>
+          }
+          @if (successMessage()) {
+            <div class="alert alert-success">{{ successMessage() }}</div>
+          }
+
+          <div class="form-grid">
+            
+            <div class="so-form-group col-span-2">
+              <label for="planName">Plan Name *</label>
+              <input type="text" id="planName" formControlName="planName" class="so-input" [class.has-error]="isFieldInvalid('planName')" placeholder="Enterprise Plan" />
+              @if (isFieldInvalid('planName')) { <div class="error-msg">Plan name is required.</div> }
+            </div>
+
+            <div class="so-form-group">
+              <label for="price">Monthly Price ($) *</label>
+              <input type="number" id="price" formControlName="price" class="so-input" [class.has-error]="isFieldInvalid('price')" placeholder="5000" />
+              @if (isFieldInvalid('price')) { <div class="error-msg">Valid price is required.</div> }
+            </div>
+
+            <div class="so-form-group">
+              <label for="billingCycle">Billing Cycle *</label>
+              <select id="billingCycle" formControlName="billingCycle" class="so-input">
+                <option value="Monthly">Monthly</option>
+                <option value="Yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div class="section-title">Limits & Quotas</div>
+
+            <div class="so-form-group">
+              <label for="maxUsers">Max Users *</label>
+              <input type="number" id="maxUsers" formControlName="maxUsers" class="so-input" [class.has-error]="isFieldInvalid('maxUsers')" />
+              <span class="field-hint">Use 99999 for unlimited</span>
+              @if (isFieldInvalid('maxUsers')) { <div class="error-msg">Required.</div> }
+            </div>
+
+            <div class="so-form-group">
+              <label for="maxProjects">Max Projects *</label>
+              <input type="number" id="maxProjects" formControlName="maxProjects" class="so-input" [class.has-error]="isFieldInvalid('maxProjects')" />
+              <span class="field-hint">Use 99999 for unlimited</span>
+              @if (isFieldInvalid('maxProjects')) { <div class="error-msg">Required.</div> }
+            </div>
+
+            <div class="so-form-group">
+              <label for="maxStorageGB">Max Storage (GB) *</label>
+              <input type="number" id="maxStorageGB" formControlName="maxStorageGB" class="so-input" [class.has-error]="isFieldInvalid('maxStorageGB')" />
+              <span class="field-hint">Use 99999 for unlimited</span>
+              @if (isFieldInvalid('maxStorageGB')) { <div class="error-msg">Required.</div> }
+            </div>
+
+            <div class="so-form-group align-center flex-row">
+              <label class="checkbox-container">
+                <input type="checkbox" formControlName="isActive" />
+                <span class="checkmark"></span>
+                <span class="checkbox-label">Active & Available for Subscriptions</span>
+              </label>
+            </div>
+
+            <div class="section-title">Trial Configuration</div>
+
+            <div class="so-form-group col-span-2 flex-row">
+              <label class="checkbox-container">
+                <input type="checkbox" formControlName="isTrialAvailable" />
+                <span class="checkmark"></span>
+                <span class="checkbox-label">Offer free trial period</span>
+              </label>
+            </div>
+
+            @if (planForm.get('isTrialAvailable')?.value) {
+              <div class="so-form-group col-span-2 animate-fade-in">
+                <label for="trialDays">Trial Duration (Days) *</label>
+                <input type="number" id="trialDays" formControlName="trialDays" class="so-input" [class.has-error]="isFieldInvalid('trialDays')" />
+                @if (isFieldInvalid('trialDays')) { <div class="error-msg">Please enter valid trial days.</div> }
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="so-btn so-btn-secondary" (click)='closeModal()' [disabled]='isSaving()'>Cancel</button>
+          <button type="submit" class="so-btn so-btn-primary" [disabled]='planForm.invalid || isSaving()'>
+            @if (isSaving()) {
+              <span class="spinner inline"></span>
+              <span>Saving...</span>
+            } @else {
+              <span>{{ editingPlanId() ? 'Save Changes' : 'Create Plan' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+</div>
