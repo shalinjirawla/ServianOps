@@ -6,8 +6,12 @@ using ServianOps_Backend.Application.Interfaces;
 using ServianOps_Backend.Application.Services;
 using ServianOps_Backend.Core.Interfaces;
 using ServianOps_Backend.Core.Interfaces.Repositories;
+using ServianOps_Backend.Core.Interfaces.Repositories.Crm;
 using ServianOps_Backend.EntityFramework.Contexts;
 using ServianOps_Backend.EntityFramework.Repositories;
+using ServianOps_Backend.EntityFramework.Repositories.Crm;
+using ServianOps_Backend.Application.Interfaces.Crm;
+using ServianOps_Backend.Application.Services.Crm;
 using ServianOps_Backend.Infrastructure.Authentication;
 using ServianOps_Backend.Infrastructure.Multitenancy;
 using FluentValidation;
@@ -100,11 +104,23 @@ builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
+// Crm Repositories
+builder.Services.AddScoped<ICustomerTypeRepository, CustomerTypeRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerContactRepository, CustomerContactRepository>();
+builder.Services.AddScoped<ISiteRepository, SiteRepository>();
+builder.Services.AddScoped<ISiteContactRepository, SiteContactRepository>();
+
 // Services
 builder.Services.AddScoped<IPlanService, PlanService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+
+// Crm Services
+builder.Services.AddScoped<ICustomerTypeService, CustomerTypeService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ISiteService, SiteService>();
 
 
 

@@ -9,6 +9,7 @@ using ServianOps_Backend.Application.Interfaces;
 using ServianOps_Backend.Core.Entities.Base;
 using ServianOps_Backend.Core.Entities.Identity;
 using ServianOps_Backend.Core.Entities.Saas;
+using ServianOps_Backend.Core.Entities.Crm;
 using ServianOps_Backend.Core.Interfaces;
 
 namespace ServianOps_Backend.EntityFramework.Contexts
@@ -31,11 +32,23 @@ namespace ServianOps_Backend.EntityFramework.Contexts
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
 
+        public DbSet<CustomerType> CustomerTypes { get; set; }
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<CustomerContact> CustomerContacts { get; set; }
+        public DbSet<Site> Sites { get; set; }
+        public DbSet<SiteContact> SiteContacts { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+            // Global delete behavior for relationships to avoid cascading physical deletes
+            foreach (var relationship in builder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+            {
+                relationship.DeleteBehavior = DeleteBehavior.Restrict;
+            }
 
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
