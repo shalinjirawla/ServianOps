@@ -1,0 +1,119 @@
+<!-- Mobile overlay -->
+@if (sidebarSvc.mobileOpen()) {
+<div class="fixed inset-0 z-40 bg-black/50 lg:hidden" (click)="sidebarSvc.closeMobile()"></div>
+}
+
+<aside
+  class="fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-200 -translate-x-full lg:translate-x-0 lg:static lg:z-0"
+  [class.w-64]="!sidebarSvc.collapsed()"
+  [class.w-16]="sidebarSvc.collapsed()"
+  [class.-translate-x-full]="!sidebarSvc.mobileOpen()" [class.translate-x-0]="sidebarSvc.mobileOpen()">
+  <!-- Header -->
+  <div class="border-b border-sidebar-border">
+    <div class="flex items-center px-4 py-3" [class.justify-center]="sidebarSvc.collapsed()" [class.px-4]="!sidebarSvc.collapsed()" [class.px-0]="sidebarSvc.collapsed()" [class.gap-3]="!sidebarSvc.collapsed()">
+      <div class="w-9 h-9 rounded-lg bg-gradient-accent grid place-items-center shrink-0 shadow-glow">
+        <app-icon name="hard-hat" [size]="20" class="text-accent-foreground"></app-icon>
+      </div>
+      @if (!sidebarSvc.collapsed()) {
+        <div class="min-w-0">
+          <div class="font-display font-bold text-sidebar-foreground truncate">ServianOps</div>
+          <div class="text-[10px] uppercase tracking-widest text-sidebar-foreground/50">Control Room</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-y-auto py-3 space-y-6" [class.px-2]="!sidebarSvc.collapsed()" [class.px-1]="sidebarSvc.collapsed()">
+    <div>
+      @if (!sidebarSvc.collapsed()) {
+        <div class="px-2 pb-2 text-xs font-medium text-sidebar-foreground/50">Operations</div>
+      }
+      <nav class="space-y-0.5">
+        @for (item of main; track item.url) {
+        <a [routerLink]="item.url" (click)="sidebarSvc.closeMobile()"
+          class="relative flex items-center rounded-md py-2 text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          [class.justify-center]="sidebarSvc.collapsed()"
+          [class.px-2]="!sidebarSvc.collapsed()"
+          [class.gap-2]="!sidebarSvc.collapsed()"
+          [class.bg-sidebar-accent]="isActive(item.url)" [class.text-sidebar-primary]="isActive(item.url)"
+          [class.font-medium]="isActive(item.url)"
+          [title]="sidebarSvc.collapsed() ? item.title : ''">
+          @if (isActive(item.url)) {
+          <span class="absolute left-0 top-2 bottom-2 w-0.5 bg-sidebar-primary rounded-full"></span>
+          }
+          <app-icon [name]="item.icon" [size]="16" class="shrink-0"></app-icon>
+          @if (!sidebarSvc.collapsed()) {
+            <span>{{ item.title }}</span>
+          }
+        </a>
+        }
+      </nav>
+    </div>
+
+    <div>
+      @if (!sidebarSvc.collapsed()) {
+        <div class="px-2 pb-2 text-xs font-medium text-sidebar-foreground/50">Commercial</div>
+      } @else {
+        <div class="border-t border-sidebar-border/30 my-2 mx-1"></div>
+      }
+      <nav class="space-y-0.5">
+        @for (item of commercial; track item.url) {
+        <a [routerLink]="item.url" (click)="sidebarSvc.closeMobile()"
+          class="relative flex items-center rounded-md py-2 text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          [class.justify-center]="sidebarSvc.collapsed()"
+          [class.px-2]="!sidebarSvc.collapsed()"
+          [class.gap-2]="!sidebarSvc.collapsed()"
+          [class.bg-sidebar-accent]="isActive(item.url)" [class.text-sidebar-primary]="isActive(item.url)"
+          [class.font-medium]="isActive(item.url)"
+          [title]="sidebarSvc.collapsed() ? item.title : ''">
+          @if (isActive(item.url)) {
+          <span class="absolute left-0 top-2 bottom-2 w-0.5 bg-sidebar-primary rounded-full"></span>
+          }
+          <app-icon [name]="item.icon" [size]="16" class="shrink-0"></app-icon>
+          @if (!sidebarSvc.collapsed()) {
+            <span>{{ item.title }}</span>
+          }
+        </a>
+        }
+      </nav>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-sidebar-border py-3 space-y-0.5" [class.px-2]="!sidebarSvc.collapsed()" [class.px-1]="sidebarSvc.collapsed()">
+    <a routerLink="/settings" (click)="sidebarSvc.closeMobile()"
+      class="flex items-center rounded-md py-2 text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      [class.justify-center]="sidebarSvc.collapsed()"
+      [class.px-2]="!sidebarSvc.collapsed()"
+      [class.gap-2]="!sidebarSvc.collapsed()"
+      [title]="sidebarSvc.collapsed() ? 'Settings' : ''">
+      <app-icon name="settings" [size]="16" class="shrink-0"></app-icon>
+      @if (!sidebarSvc.collapsed()) {
+        <span>Settings</span>
+      }
+    </a>
+    <button type="button"
+      class="w-full flex items-center rounded-md py-2 text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      [class.justify-center]="sidebarSvc.collapsed()"
+      [class.px-2]="!sidebarSvc.collapsed()"
+      [class.gap-2]="!sidebarSvc.collapsed()"
+      [title]="sidebarSvc.collapsed() ? 'Help & docs' : ''">
+      <app-icon name="help-circle" [size]="16" class="shrink-0"></app-icon>
+      @if (!sidebarSvc.collapsed()) {
+        <span>Help & docs</span>
+      }
+    </button>
+    <button type="button" (click)="handleSignOut()"
+      class="w-full flex items-center rounded-md py-2 text-sm outline-none transition-colors text-destructive/90 hover:text-destructive hover:bg-sidebar-accent"
+      [class.justify-center]="sidebarSvc.collapsed()"
+      [class.px-2]="!sidebarSvc.collapsed()"
+      [class.gap-2]="!sidebarSvc.collapsed()"
+      [title]="sidebarSvc.collapsed() ? 'Sign out' : ''">
+      <app-icon name="log-out" [size]="16" class="shrink-0"></app-icon>
+      @if (!sidebarSvc.collapsed()) {
+        <span>Sign out</span>
+      }
+    </button>
+  </div>
+</aside>

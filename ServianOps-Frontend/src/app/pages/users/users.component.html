@@ -1,0 +1,177 @@
+<app-topbar title="User Accounts" subtitle="Manage access settings and contact information for your team"></app-topbar>
+
+<div class="p-4 md:p-6 space-y-4">
+  <!-- Filters & Action -->
+  <div class="card">
+    <div class="p-4 flex flex-wrap gap-3 items-center">
+      <div class="relative flex-1 min-w-64">
+        <app-icon name="search" [size]="16"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
+        <input placeholder="Search by name or email" [(ngModel)]="searchQuery" class="input pl-9" />
+      </div>
+      <button type="button" (click)="openCreateDrawer()" class="btn btn-primary bg-gradient-primary">
+        <app-icon name="plus" [size]="16"></app-icon> New User
+      </button>
+    </div>
+  </div>
+
+  <!-- Users List -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-muted/20">
+            <th (click)="setSort('firstName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                User / Contact
+                <app-icon *ngIf="sortField === 'firstName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Phone</th>
+            <th (click)="setSort('isActive')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Status
+                <app-icon *ngIf="sortField === 'isActive'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 w-52 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of users" class="border-b border-border hover:bg-muted/50 last:border-0">
+            <td class="p-4 align-middle">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-primary text-primary-foreground grid place-items-center shrink-0 font-bold uppercase">
+                  {{ initials(u.firstName + ' ' + u.lastName) }}
+                </div>
+                <div class="min-w-0">
+                  <div class="font-medium text-foreground">{{ u.firstName }} {{ u.lastName }}</div>
+                  <div class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
+                    <app-icon name="mail" [size]="12"></app-icon>{{ u.email }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="p-4 align-middle text-muted-foreground">{{ u.phone || '—' }}</td>
+            <td class="p-4 align-middle">
+              <span class="badge" [class.badge-secondary]="!u.isActive" [class.text-success]="u.isActive">
+                {{ u.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="p-4 align-middle text-right space-x-1" (click)="$event.stopPropagation()">
+              <button type="button" (click)="openEditDrawer(u)" class="btn btn-icon btn-ghost text-primary hover:bg-primary/10 rounded-lg h-9 w-9 inline-grid place-items-center" title="Edit User">
+                <app-icon name="edit-2" [size]="16"></app-icon>
+              </button>
+              <button type="button" (click)="toggleStatus(u)" class="btn btn-icon btn-ghost rounded-lg h-9 w-9 inline-grid place-items-center" [class.text-warning]="u.isActive" [class.text-success]="!u.isActive" [title]="u.isActive ? 'Deactivate User' : 'Activate User'">
+                <app-icon [name]="u.isActive ? 'user-minus' : 'user-plus'" [size]="16"></app-icon>
+              </button>
+              <button type="button" (click)="deleteUser(u.id)" class="btn btn-icon btn-ghost text-destructive hover:bg-destructive/10 rounded-lg h-9 w-9 inline-grid place-items-center" title="Delete User">
+                <app-icon name="trash-2" [size]="16"></app-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="users.length === 0">
+            <td colspan="4" class="p-8 text-center text-muted-foreground">No users found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
+      <div class="text-xs text-muted-foreground">
+        Showing {{ filteredAndSortedUsers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
+        {{ mathMin(currentPage * pageSize, filteredAndSortedUsers.length) }} of {{ filteredAndSortedUsers.length }} users
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+          <app-icon name="chevron-left" [size]="14"></app-icon> Previous
+        </button>
+        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+          Next <app-icon name="chevron-right" [size]="14"></app-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer Backdrop -->
+<div *ngIf="showDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300"
+  (click)="closeDrawer()"></div>
+
+<!-- Slide-over Drawer Panel -->
+<div
+  class="fixed inset-y-0 right-0 max-w-2xl w-full bg-card border-l border-border shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden translate-x-full"
+  [class.translate-x-0]="showDrawer" [class.translate-x-full]="!showDrawer">
+  <!-- Header -->
+  <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
+    <div>
+      <h2 class="text-xl font-bold tracking-tight text-foreground">
+        {{ isEditMode ? 'Edit User Profile' : 'Add New User' }}</h2>
+      <p class="text-xs text-muted-foreground mt-1">Configure profile details, phone contact, and password.</p>
+    </div>
+    <button type="button" (click)="closeDrawer()" class="btn btn-ghost btn-icon h-9 w-9 rounded-full">
+      <app-icon name="x" [size]="18"></app-icon>
+    </button>
+  </div>
+
+  <!-- Content (Scrollable) -->
+  <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="flex-1 overflow-y-auto p-6 space-y-6">
+    <!-- Section 1: User Info -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">1. Profile
+        Details</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label for="firstName" class="text-xs font-medium text-muted-foreground">First Name *</label>
+          <input id="firstName" type="text" formControlName="firstName" class="input h-10" placeholder="e.g. John" />
+          <span *ngIf="submitted && userForm.get('firstName')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">First Name is required.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="lastName" class="text-xs font-medium text-muted-foreground">Last Name *</label>
+          <input id="lastName" type="text" formControlName="lastName" class="input h-10" placeholder="e.g. Doe" />
+          <span *ngIf="submitted && userForm.get('lastName')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Last Name is required.</span>
+        </div>
+        <div class="space-y-1.5 col-span-2">
+          <label for="email" class="text-xs font-medium text-muted-foreground">Email Address *</label>
+          <input id="email" type="email" formControlName="email" class="input h-10"
+            placeholder="e.g. j.doe@company.com" />
+          <span *ngIf="submitted && userForm.get('email')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Email is required.</span>
+          <span *ngIf="submitted && userForm.get('email')?.errors?.['email']"
+            class="text-xs text-destructive mt-1 block">Please enter a valid email address.</span>
+        </div>
+        <div class="space-y-1.5 col-span-2">
+          <label for="phone" class="text-xs font-medium text-muted-foreground">Contact Phone</label>
+          <input id="phone" type="text" formControlName="phone" class="input h-10" placeholder="+44 7911 123456" />
+          <span *ngIf="submitted && userForm.get('phone')?.errors?.['pattern']"
+            class="text-xs text-destructive mt-1 block">Invalid phone number format.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Password (only for creation) -->
+    <div class="space-y-4" *ngIf="!isEditMode">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">2. Password
+      </h3>
+      <div class="space-y-1.5">
+        <label for="password" class="text-xs font-medium text-muted-foreground">User Password *</label>
+        <input id="password" type="password" formControlName="password" class="input h-10" placeholder="••••••••" />
+        <span *ngIf="submitted && userForm.get('password')?.errors?.['required']"
+          class="text-xs text-destructive mt-1 block">Password is required.</span>
+        <span *ngIf="submitted && userForm.get('password')?.errors?.['minlength']"
+          class="text-xs text-destructive mt-1 block">Password must be at least 6 characters.</span>
+      </div>
+    </div>
+
+    <!-- Submit Section -->
+    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
+      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+        {{ isEditMode ? 'Save Profile' : 'Create User' }}
+      </button>
+    </div>
+  </form>
+</div>

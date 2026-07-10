@@ -1,0 +1,298 @@
+<app-topbar title="Clients" [subtitle]="filteredAndSortedClients.length + ' clients total'"></app-topbar>
+<div class="p-4 md:p-6 space-y-4">
+  <div class="card">
+    <div class="p-4 flex flex-wrap gap-3 items-center">
+      <div class="relative flex-1 min-w-64">
+        <app-icon name="search" [size]="16"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
+        <input placeholder="Search by company, contact or phone" class="input pl-9" [(ngModel)]="searchQuery" />
+      </div>
+      <button type="button" (click)="openDrawer()" class="btn btn-primary bg-gradient-primary">
+        <app-icon name="plus" [size]="16"></app-icon> New Client
+      </button>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-muted/20">
+            <th (click)="setSort('companyName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Client
+                <app-icon *ngIf="sortField === 'companyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th (click)="setSort('primaryContactName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Primary contact
+                <app-icon *ngIf="sortField === 'primaryContactName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Sites</th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Open jobs</th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Terms</th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">VAT</th>
+            <th class="h-11 px-4 w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of clients" (click)="openEditDrawer(c)" class="border-b border-border hover:bg-muted/50 cursor-pointer last:border-0">
+            <td class="p-4 align-middle">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-primary text-primary-foreground grid place-items-center shrink-0">
+                  <app-icon name="building" [size]="16"></app-icon>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-medium text-foreground">{{ c.name }}</div>
+                  <div class="text-xs text-muted-foreground font-mono">{{ c.id }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-4 align-middle">
+              <div class="font-medium text-sm text-foreground">{{ c.contact }}</div>
+              <div class="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
+                <span class="flex items-center gap-1"><app-icon name="mail" [size]="12"></app-icon>{{ c.email }}</span>
+              </div>
+              <div class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <app-icon name="phone" [size]="12"></app-icon>{{ c.phone }}
+              </div>
+            </td>
+            <td class="p-4 align-middle hidden md:table-cell text-muted-foreground">{{ c.sites }}</td>
+            <td class="p-4 align-middle hidden md:table-cell">
+              <span class="badge badge-outline font-medium">{{ c.openJobs }} open</span>
+            </td>
+            <td class="p-4 align-middle hidden lg:table-cell text-sm text-muted-foreground">{{ c.terms }}</td>
+            <td class="p-4 align-middle hidden lg:table-cell font-mono text-xs text-muted-foreground">{{ c.vat }}</td>
+            <td class="p-4 align-middle" (click)="$event.stopPropagation()">
+              <button type="button" (click)="openEditDrawer(c)" class="btn btn-ghost btn-icon">
+                <app-icon name="edit-2" [size]="16"></app-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="clients.length === 0">
+            <td colspan="7" class="p-8 text-center text-muted-foreground">
+              No clients found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
+      <div class="text-xs text-muted-foreground">
+        Showing {{ filteredAndSortedClients.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
+        {{ mathMin(currentPage * pageSize, filteredAndSortedClients.length) }} of {{ filteredAndSortedClients.length }} clients
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+          <app-icon name="chevron-left" [size]="14"></app-icon> Previous
+        </button>
+        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+          Next <app-icon name="chevron-right" [size]="14"></app-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer Backdrop -->
+<div *ngIf="showDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300"
+  (click)="closeDrawer()"></div>
+
+<!-- Slide-over Drawer Panel -->
+<div class="fixed inset-y-0 right-0 max-w-2xl w-full bg-card border-l border-border shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden translate-x-full"
+  [class.translate-x-0]="showDrawer" [class.translate-x-full]="!showDrawer">
+  <!-- Header -->
+  <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
+    <div>
+      <h2 class="text-xl font-bold tracking-tight text-foreground">
+        {{ isEditMode ? 'Edit Client Profile' : 'Create Client Profile' }}
+      </h2>
+      <p class="text-xs text-muted-foreground mt-1">Configure general, billing, rates, SLA and workflow rules.</p>
+    </div>
+    <button type="button" (click)="closeDrawer()" class="btn btn-ghost btn-icon h-9 w-9 rounded-full">
+      <app-icon name="x" [size]="18"></app-icon>
+    </button>
+  </div>
+
+  <!-- Content (Scrollable) -->
+  <form [formGroup]="clientForm" (ngSubmit)="saveClient()" class="flex-1 overflow-y-auto p-6 space-y-6">
+    <!-- Section 1: Company Profile -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">
+        1. Company Profile
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label for="name" class="text-xs font-medium text-muted-foreground">Company Name *</label>
+          <input id="name" type="text" formControlName="name" class="input h-10" placeholder="e.g. Acme Corp" />
+          <span *ngIf="submitted && clientForm.get('name')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Company Name is required.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="contact" class="text-xs font-medium text-muted-foreground">Main Contact Person *</label>
+          <input id="contact" type="text" formControlName="contact" class="input h-10" placeholder="e.g. John Doe" />
+          <span *ngIf="submitted && clientForm.get('contact')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Contact Person is required.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="email" class="text-xs font-medium text-muted-foreground">Contact Email *</label>
+          <input id="email" type="email" formControlName="email" class="input h-10" placeholder="john.doe@acme.com" />
+          <span *ngIf="submitted && clientForm.get('email')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Contact Email is required.</span>
+          <span *ngIf="submitted && clientForm.get('email')?.errors?.['email']"
+            class="text-xs text-destructive mt-1 block">Please enter a valid email address.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="phone" class="text-xs font-medium text-muted-foreground">Contact Phone</label>
+          <input id="phone" type="text" formControlName="phone" class="input h-10" placeholder="+44 7700 900077" />
+          <span *ngIf="submitted && clientForm.get('phone')?.errors?.['pattern']"
+            class="text-xs text-destructive mt-1 block">Invalid phone number format.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Billing & Payments -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">
+        2. Billing & Financials
+      </h3>
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label for="billingEmail" class="text-xs font-medium text-muted-foreground">Billing Email</label>
+            <input id="billingEmail" type="email" formControlName="billingEmail" class="input h-10"
+              placeholder="finance@acme.com" />
+            <span *ngIf="submitted && clientForm.get('billingEmail')?.errors?.['email']"
+              class="text-xs text-destructive mt-1 block">Please enter a valid email address.</span>
+          </div>
+          <div class="space-y-1.5">
+            <label for="vat" class="text-xs font-medium text-muted-foreground">VAT Registration / Status</label>
+            <input id="vat" type="text" formControlName="vat" class="input h-10" placeholder="e.g. GB 123 456 789" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label for="billingAddress" class="text-xs font-medium text-muted-foreground">Billing Address</label>
+          <textarea id="billingAddress" rows="2" formControlName="billingAddress"
+            class="input py-2 h-20 min-h-20 w-full" placeholder="e.g. 100 Financial Way, London EC1A 1BB"></textarea>
+        </div>
+        <div class="space-y-1.5">
+          <label for="terms" class="text-xs font-medium text-muted-foreground">Payment Terms</label>
+          <select id="terms" formControlName="terms" class="input h-10 select-style bg-background">
+            <option value="Net 14">Net 14 Days</option>
+            <option value="Net 30">Net 30 Days</option>
+            <option value="Net 45">Net 45 Days</option>
+            <option value="Net 60">Net 60 Days</option>
+            <option value="Due on Receipt">Due on Receipt</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Commercial Rates -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">
+        3. Client Rates
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="space-y-1.5">
+          <label for="hourlyRate" class="text-xs font-medium text-muted-foreground">Std Hourly Rate (£)</label>
+          <input id="hourlyRate" type="number" formControlName="hourlyRate" class="input h-10" min="0" />
+          <span *ngIf="submitted && clientForm.get('hourlyRate')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Hourly rate must be positive or zero.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="calloutFee" class="text-xs font-medium text-muted-foreground">Callout Fee (£)</label>
+          <input id="calloutFee" type="number" formControlName="calloutFee" class="input h-10" min="0" />
+          <span *ngIf="submitted && clientForm.get('calloutFee')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Callout fee must be positive or zero.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="outOfHoursMultiplier" class="text-xs font-medium text-muted-foreground">Out of Hours Mult.</label>
+          <input id="outOfHoursMultiplier" type="number" formControlName="outOfHoursMultiplier" class="input h-10"
+            step="0.1" min="1" />
+          <span *ngIf="submitted && clientForm.get('outOfHoursMultiplier')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Multiplier must be at least 1.0.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: SLA Targets -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">
+        4. SLA Response Rules
+      </h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="space-y-1.5">
+          <label for="slaP1" class="text-xs font-medium text-muted-foreground">P1 SLA (hours)</label>
+          <input id="slaP1" type="number" formControlName="slaP1" class="input h-10" min="1" />
+          <span *ngIf="submitted && clientForm.get('slaP1')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Must be at least 1 hour.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="slaP2" class="text-xs font-medium text-muted-foreground">P2 SLA (hours)</label>
+          <input id="slaP2" type="number" formControlName="slaP2" class="input h-10" min="1" />
+          <span *ngIf="submitted && clientForm.get('slaP2')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Must be at least 1 hour.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="slaP3" class="text-xs font-medium text-muted-foreground">P3 SLA (days)</label>
+          <input id="slaP3" type="number" formControlName="slaP3" class="input h-10" min="1" />
+          <span *ngIf="submitted && clientForm.get('slaP3')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Must be at least 1 day.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="slaP4" class="text-xs font-medium text-muted-foreground">P4 SLA (days)</label>
+          <input id="slaP4" type="number" formControlName="slaP4" class="input h-10" min="1" />
+          <span *ngIf="submitted && clientForm.get('slaP4')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Must be at least 1 day.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: PO Rules & Preferences -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">
+        5. Workflow Rules & Prefs
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/10">
+          <div>
+            <div class="text-xs font-semibold text-foreground">Purchase Order Required</div>
+            <div class="text-[10px] text-muted-foreground">Enforce PO addition before raising invoices</div>
+          </div>
+          <input type="checkbox" formControlName="poRequired" class="h-4 w-4 rounded border-input" />
+        </div>
+
+        <div *ngIf="clientForm.get('poRequired')?.value" class="space-y-1.5">
+          <label for="poLimit" class="text-xs font-medium text-muted-foreground">PO Financial Limit (£)</label>
+          <input id="poLimit" type="number" formControlName="poLimit" class="input h-10" min="0" />
+          <span *ngIf="submitted && clientForm.get('poLimit')?.errors?.['min']"
+            class="text-xs text-destructive mt-1 block">Limit must be positive or zero.</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
+            <input type="checkbox" formControlName="emailInvoice" class="h-4 w-4 rounded border-input" /> 
+            Auto-email Invoice on completion
+          </label>
+          <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
+            <input type="checkbox" formControlName="autoNotify" class="h-4 w-4 rounded border-input" /> 
+            SMS/Email customer job updates
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Section -->
+    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
+      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+        {{ isEditMode ? 'Update Client Profile' : 'Save Client Profile' }}
+      </button>
+    </div>
+  </form>
+</div>

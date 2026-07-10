@@ -1,0 +1,12 @@
+@if (ready()) {
+  <div class="layout-container">
+    <app-sidebar></app-sidebar>
+    <div class="main-content-wrapper">
+      <div class="scrollable-content">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="loading-container">Loading…</div>
+}

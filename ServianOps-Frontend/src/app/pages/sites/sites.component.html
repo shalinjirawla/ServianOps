@@ -1,0 +1,188 @@
+<app-topbar title="Sites & Premises" subtitle="Manage locations, access, RAMS and asbestos registers"></app-topbar>
+<div class="p-4 md:p-6 space-y-4">
+  <div class="card">
+    <div class="p-4 flex flex-wrap gap-3 items-center">
+      <div class="relative flex-1 min-w-64">
+        <app-icon name="search" [size]="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
+        <input placeholder="Search by site, client or address" class="input pl-9" [(ngModel)]="searchQuery" />
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" (click)="setSort('siteName')" class="btn btn-outline gap-1.5" [class.bg-muted]="sortField === 'siteName'">
+          Sort by Name
+          <app-icon *ngIf="sortField === 'siteName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+        </button>
+        <button type="button" (click)="setSort('client')" class="btn btn-outline gap-1.5" [class.bg-muted]="sortField === 'client'">
+          Sort by Client
+          <app-icon *ngIf="sortField === 'client'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+        </button>
+      </div>
+      <button type="button" (click)="openDrawer()" class="btn btn-primary bg-gradient-primary">
+        <app-icon name="plus" [size]="16"></app-icon> New Site
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div *ngFor="let s of sites" (click)="openEditDrawer(s)" class="card group hover:shadow-elegant transition-all cursor-pointer">
+      <div class="p-6 pb-3">
+        <div class="flex justify-between items-start gap-2">
+          <div class="min-w-0">
+            <div class="text-xs font-mono text-muted-foreground">{{ s.id }}</div>
+            <h3 class="font-display text-base font-semibold truncate text-foreground">{{ s.name }}</h3>
+          </div>
+          <span class="badge badge-outline shrink-0">{{ firstWord(s.client) }}</span>
+        </div>
+      </div>
+      <div class="px-6 pb-6 space-y-3 text-sm">
+        <div class="flex gap-2 text-muted-foreground">
+          <app-icon name="map-pin" [size]="16" class="shrink-0 mt-0.5 text-primary"></app-icon>
+          <span class="truncate">{{ s.address }}</span>
+        </div>
+        <div class="flex items-center gap-2 text-muted-foreground">
+          <app-icon name="user-2" [size]="16" class="text-primary"></app-icon> {{ s.contact }}
+        </div>
+        <div class="flex items-center gap-2 text-muted-foreground">
+          <app-icon name="key-round" [size]="16" class="text-primary"></app-icon> {{ s.access }}
+        </div>
+        <div class="pt-3 border-t border-border flex items-center justify-between">
+          <div class="flex gap-1.5 flex-wrap">
+            <span *ngIf="s.ramsRequired" class="badge badge-secondary text-[10px]"><app-icon name="shield-alert" [size]="12"></app-icon>RAMS</span>
+            <span *ngIf="s.asbestosRequired" class="badge badge-secondary text-[10px]">Asbestos ✓</span>
+          </div>
+          <button type="button" (click)="openEditDrawer(s); $event.stopPropagation()" class="btn btn-icon btn-ghost text-primary hover:bg-primary/10 rounded-lg h-8 w-8 inline-grid place-items-center" title="Open Site Details">
+            <app-icon name="edit-2" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="sites.length === 0" class="col-span-full card p-8 text-center text-muted-foreground">
+      No sites found.
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="card p-4 flex flex-wrap items-center justify-between gap-3 bg-muted/10">
+    <div class="text-xs text-muted-foreground">
+      Showing {{ filteredAndSortedSites.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
+      {{ mathMin(currentPage * pageSize, filteredAndSortedSites.length) }} of {{ filteredAndSortedSites.length }} sites
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+        <app-icon name="chevron-left" [size]="14"></app-icon> Previous
+      </button>
+      <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+        Next <app-icon name="chevron-right" [size]="14"></app-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer Backdrop -->
+<div *ngIf="showDrawer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300" (click)="closeDrawer()"></div>
+
+<!-- Slide-over Drawer Panel -->
+<div class="fixed inset-y-0 right-0 max-w-2xl w-full bg-card border-l border-border shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden translate-x-full"
+     [class.translate-x-0]="showDrawer" [class.translate-x-full]="!showDrawer">
+  <!-- Header -->
+  <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
+    <div>
+      <h2 class="text-xl font-bold tracking-tight text-foreground">
+        {{ isEditMode ? 'Edit Site / Premises' : 'Add New Site / Premises' }}
+      </h2>
+      <p class="text-xs text-muted-foreground mt-1">Register a new site against an existing client company.</p>
+    </div>
+    <button type="button" (click)="closeDrawer()" class="btn btn-ghost btn-icon h-9 w-9 rounded-full">
+      <app-icon name="x" [size]="18"></app-icon>
+    </button>
+  </div>
+
+  <!-- Content (Scrollable) -->
+  <form [formGroup]="siteForm" (ngSubmit)="saveSite()" class="flex-1 overflow-y-auto p-6 space-y-6">
+    <!-- Section 1: Client Selection -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">1. Client / Company</h3>
+      <div class="space-y-1.5">
+        <label for="selectedClient" class="text-xs font-medium text-muted-foreground">Select Client Company *</label>
+        <select id="selectedClient" formControlName="selectedClient" class="input h-10 select-style bg-background text-foreground">
+          <option *ngFor="let c of clients" [value]="c.id">{{ c.name }}</option>
+        </select>
+        <span *ngIf="submitted && siteForm.get('selectedClient')?.errors?.['required']" class="text-xs text-destructive mt-1 block">Client Company is required.</span>
+      </div>
+    </div>
+
+    <!-- Section 2: Site Profile & Contact -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">2. Site Details</h3>
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label for="siteName" class="text-xs font-medium text-muted-foreground">Site / Premises Name *</label>
+            <input id="siteName" type="text" formControlName="name" class="input h-10" placeholder="e.g. Canary Wharf Branch" />
+            <span *ngIf="submitted && siteForm.get('name')?.errors?.['required']" class="text-xs text-destructive mt-1 block">Site Name is required.</span>
+          </div>
+          <div class="space-y-1.5">
+            <label for="siteContact" class="text-xs font-medium text-muted-foreground">Site Manager / Contact *</label>
+            <input id="siteContact" type="text" formControlName="contact" class="input h-10" placeholder="e.g. Ravi Desai" />
+            <span *ngIf="submitted && siteForm.get('contact')?.errors?.['required']" class="text-xs text-destructive mt-1 block">Site Contact is required.</span>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label for="address" class="text-xs font-medium text-muted-foreground">Site Address *</label>
+          <input id="address" type="text" formControlName="address" class="input h-10" placeholder="e.g. 27 Bank St, London E14" />
+          <span *ngIf="submitted && siteForm.get('address')?.errors?.['required']" class="text-xs text-destructive mt-1 block">Site Address is required.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Access & Logistics -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">3. Access & Logistics</h3>
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="access" class="text-xs font-medium text-muted-foreground">Access details</label>
+          <input id="access" type="text" formControlName="access" class="input h-10" placeholder="e.g. Loading bay B, 08:00-17:00" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label for="parking" class="text-xs font-medium text-muted-foreground">Parking Information</label>
+            <input id="parking" type="text" formControlName="parking" class="input h-10" placeholder="e.g. Paid parking nearby, no height limit" />
+          </div>
+          <div class="space-y-1.5">
+            <label for="keysCode" class="text-xs font-medium text-muted-foreground">Key safe / Code</label>
+            <input id="keysCode" type="text" formControlName="keysCode" class="input h-10" placeholder="e.g. C1234X" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: RAMS & Site Safety -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">4. Safety & Compliance</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
+          <input type="checkbox" formControlName="asbestosRequired" class="h-4 w-4 rounded border-input" /> Asbestos register check required
+        </label>
+        <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
+          <input type="checkbox" formControlName="ramsRequired" class="h-4 w-4 rounded border-input" /> Site-specific RAMS sign-off required
+        </label>
+      </div>
+    </div>
+
+    <!-- Section 5: Internal Dispatch Notes -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">5. Dispatch & Notes</h3>
+      <div class="space-y-1.5">
+        <label for="notes" class="text-xs font-medium text-muted-foreground">Internal Dispatch / Safety Notes</label>
+        <textarea id="notes" rows="3" formControlName="notes" class="input py-2 h-24 min-h-24 w-full" placeholder="Specify any hazard details, induction rules or PPE required..."></textarea>
+      </div>
+    </div>
+
+    <!-- Submit Section -->
+    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
+      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+        {{ isEditMode ? 'Update Site Details' : 'Save Site Details' }}
+      </button>
+    </div>
+  </form>
+</div>

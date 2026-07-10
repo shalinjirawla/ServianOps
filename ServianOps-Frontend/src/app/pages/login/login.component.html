@@ -1,0 +1,104 @@
+<div class="min-h-screen grid lg:grid-cols-2">
+  <!-- Left — brand panel -->
+  <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-hero text-white overflow-hidden">
+    <div class="absolute inset-0 opacity-[0.07]"
+      style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 24px 24px;">
+    </div>
+    <div class="relative flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-gradient-accent grid place-items-center shadow-glow">
+        <app-icon name="hard-hat" [size]="24" class="text-accent-foreground"></app-icon>
+      </div>
+      <div>
+        <div class="font-display text-xl font-bold tracking-tight">ServianOps</div>
+        <div class="text-xs text-white/60">Field Service OS</div>
+      </div>
+    </div>
+
+    <div class="relative space-y-6 max-w-md">
+      <h1 class="font-display text-4xl xl:text-5xl font-bold leading-[1.05]">
+        Every job. Every engineer. <span class="text-accent">One control room.</span>
+      </h1>
+      <p class="text-white/70 leading-relaxed">
+        From client onboarding to engineer dispatch, follow-up quotes and invoicing — run the full field
+        service lifecycle without the spreadsheets.
+      </p>
+      <div class="grid gap-3 pt-4">
+        <div class="flex items-center gap-3 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/10 grid place-items-center border border-white/10">
+            <app-icon name="clipboard-check" [size]="16" class="text-accent"></app-icon>
+          </div>
+          <span class="text-white/85">Live SLA & PO tracking on every job</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/10 grid place-items-center border border-white/10">
+            <app-icon name="wrench" [size]="16" class="text-accent"></app-icon>
+          </div>
+          <span class="text-white/85">Mobile-first engineer app with photos & sign-off</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/10 grid place-items-center border border-white/10">
+            <app-icon name="shield-check" [size]="16" class="text-accent"></app-icon>
+          </div>
+          <span class="text-white/85">RAMS, asbestos register and access control</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative text-xs text-white/50">© {{ year }} ServianOps. All rights reserved.</div>
+  </div>
+
+  <!-- Right — form -->
+  <div class="flex items-center justify-center p-6 sm:p-12 bg-background">
+    <div class="w-full max-w-md">
+      <div class="lg:hidden flex items-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-xl bg-primary grid place-items-center">
+          <app-icon name="hard-hat" [size]="20" class="text-primary-foreground"></app-icon>
+        </div>
+        <span class="font-display text-xl font-bold">ServianOps</span>
+      </div>
+
+      <h2 class="font-display text-3xl font-bold tracking-tight">Sign in</h2>
+      <p class="text-muted-foreground mt-2 text-sm">Welcome back. Enter your credentials to access your control room.
+      </p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-8 space-y-5">
+        <div class="space-y-2">
+          <label for="tenancyName" class="text-sm font-medium">Tenancy name</label>
+          <input id="tenancyName" type="text" formControlName="tenancyName"
+            placeholder="Enter tenancy name" class="input h-11" />
+        </div>
+        <div class="space-y-2">
+          <label for="email" class="text-sm font-medium">Work email</label>
+          <input id="email" type="email" formControlName="email" placeholder="you@company.com"
+            class="input h-11" />
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="password" class="text-sm font-medium">Password</label>
+            <a routerLink="/auth/forgot-password" class="text-xs font-medium text-primary hover:underline">Forgot
+              password?</a>
+          </div>
+          <input id="password" type="password" formControlName="password" placeholder="••••••••"
+            class="input h-11" />
+        </div>
+        <label class="flex items-center gap-2 text-sm text-muted-foreground select-none">
+          <input type="checkbox" formControlName="rememberMe" class="h-4 w-4 rounded border-input" /> Keep me signed in for 30 days
+        </label>
+
+        <button type="submit" [disabled]="isLoading()"
+          class="btn btn-primary bg-gradient-primary hover:opacity-95 shadow-elegant w-full h-11">
+          @if (isLoading()) {
+          <app-icon name="loader-2" [size]="16" class="animate-spin"></app-icon>
+          } @else {
+          Sign in to ServianOps
+          }
+        </button>
+
+        <div class="text-xs text-center text-muted-foreground pt-2">
+          Trouble accessing your account? <a class="text-primary font-medium hover:underline"
+            href="mailto:support@ServianOps.io">Contact support</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
