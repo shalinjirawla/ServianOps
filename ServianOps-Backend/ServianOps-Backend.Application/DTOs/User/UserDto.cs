@@ -1,4 +1,5 @@
 using System;
+using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.User
 {
@@ -6,6 +7,7 @@ namespace ServianOps_Backend.Application.DTOs.User
     {
         public long Id { get; set; }
         public long? TenantId { get; set; }
+        public TenantSummaryDto Tenant { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }

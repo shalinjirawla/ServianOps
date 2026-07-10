@@ -9,5 +9,6 @@ namespace ServianOps_Backend.Core.Interfaces.Repositories
         Task<User> GetByEmailAndTenantIdAsync(string email, long? tenantId);
         Task<string> GetUserRoleNameAsync(long userId);
         Task<System.Collections.Generic.IReadOnlyList<User>> GetAdministratorsPagedAsync(int pageNumber, int pageSize);
+        Task<System.Collections.Generic.IReadOnlyList<User>> GetTenantAdministratorsAsync(long tenantId);
     }
 }

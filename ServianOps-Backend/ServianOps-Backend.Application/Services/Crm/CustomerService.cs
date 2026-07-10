@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ServianOps_Backend.Application.DTOs;
 using ServianOps_Backend.Application.DTOs.Crm;
 using ServianOps_Backend.Application.Interfaces.Crm;
 using ServianOps_Backend.Core.Entities.Crm;
@@ -129,7 +130,13 @@ namespace ServianOps_Backend.Application.Services.Crm
                     Name = c.Name,
                     CompanyName = c.CompanyName,
                     MobileNumber = c.MobileNumber,
-                    CustomerTypeName = c.CustomerType?.Name,
+                    CustomerType = c.CustomerType != null ? new CustomerTypeDto 
+                    {
+                        Id = c.CustomerType.Id,
+                        Name = c.CustomerType.Name,
+                        CreationTime = c.CustomerType.CreationTime,
+                        IsActive = c.CustomerType.IsActive
+                    } : null,
                     AccountManagerName = c.AccountManager != null ? $"{c.AccountManager.FirstName} {c.AccountManager.LastName}" : null,
                     PrimaryContactName = primaryContact != null ? $"{primaryContact.FirstName} {primaryContact.LastName}" : null,
                     PrimaryContactMobile = primaryContact?.MobileNumber,
@@ -137,6 +144,16 @@ namespace ServianOps_Backend.Application.Services.Crm
                     IsActive = c.IsActive
                 };
             }).ToList();
+        }
+
+        public async Task<IReadOnlyList<DropdownDto>> GetDropdownAsync()
+        {
+            var customers = await _repository.GetAllAsync();
+            return customers.Select(c => new DropdownDto
+            {
+                Id = c.Id,
+                Name = string.IsNullOrWhiteSpace(c.CompanyName) ? c.Name : c.CompanyName
+            }).OrderBy(x => x.Name).ToList();
         }
 
         public async Task DeleteAsync(long id)
@@ -185,7 +202,13 @@ namespace ServianOps_Backend.Application.Services.Crm
                 VatNumber = entity.VatNumber,
                 IsPORequired = entity.IsPORequired,
                 CustomerTypeId = entity.CustomerTypeId,
-                CustomerTypeName = entity.CustomerType?.Name,
+                CustomerType = entity.CustomerType != null ? new CustomerTypeDto 
+                {
+                    Id = entity.CustomerType.Id,
+                    Name = entity.CustomerType.Name,
+                    CreationTime = entity.CustomerType.CreationTime,
+                    IsActive = entity.CustomerType.IsActive
+                } : null,
                 AccountManagerId = entity.AccountManagerId,
                 AccountManagerName = entity.AccountManager != null ? $"{entity.AccountManager.FirstName} {entity.AccountManager.LastName}" : null,
                 SellingRateId = entity.SellingRateId,

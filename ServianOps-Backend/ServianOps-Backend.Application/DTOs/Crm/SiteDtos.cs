@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.Crm
 {
@@ -70,6 +71,7 @@ namespace ServianOps_Backend.Application.DTOs.Crm
     {
         public long Id { get; set; }
         public long CustomerId { get; set; }
+        public CustomerSummaryDto Customer { get; set; }
         
         public string SiteName { get; set; }
         public string CompanyName { get; set; }
@@ -96,6 +98,7 @@ namespace ServianOps_Backend.Application.DTOs.Crm
     public class SiteListDto
     {
         public long Id { get; set; }
+        public CustomerSummaryDto Customer { get; set; }
         public string SiteName { get; set; }
         public string CompanyName { get; set; }
         public string MobileNumber { get; set; }

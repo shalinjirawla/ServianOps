@@ -14,6 +14,7 @@ namespace ServianOps_Backend.Application.Interfaces
         Task<string> GetUserRoleNameAsync(long userId);
         Task<IReadOnlyList<UserDto>> GetUsersPagedAsync(int pageNumber, int pageSize);
         Task<IReadOnlyList<UserDto>> GetAdministratorsPagedAsync(int pageNumber, int pageSize);
+        Task<IReadOnlyList<UserDto>> GetTenantAdministratorsAsync(long tenantId);
         Task UpdateUserAsync(long id, CreateUserDto dto); // Reusing CreateDto for simplicity, normally UpdateDto
         Task DeleteUserAsync(long id);
         Task ToggleUserStatusAsync(long id);
