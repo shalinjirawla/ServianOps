@@ -17,6 +17,7 @@ namespace ServianOps_Backend.EntityFramework.Repositories.Crm
         public override async Task<IReadOnlyList<Site>> GetPagedAsync(int pageNumber, int pageSize)
         {
             return await _dbContext.Sites
+                .Include(s => s.Customer)
                 .Include(s => s.AccountManager)
                 .Include(s => s.SiteContacts.Where(contact => contact.IsActive))
                 .AsNoTracking()
@@ -29,6 +30,7 @@ namespace ServianOps_Backend.EntityFramework.Repositories.Crm
         public async Task<Site> GetSiteWithContactsAsync(long id)
         {
             return await _dbContext.Sites
+                .Include(s => s.Customer)
                 .Include(s => s.AccountManager)
                 .Include(s => s.SiteContacts.Where(contact => contact.IsActive && !contact.IsDeleted))
                 .FirstOrDefaultAsync(s => s.Id == id);

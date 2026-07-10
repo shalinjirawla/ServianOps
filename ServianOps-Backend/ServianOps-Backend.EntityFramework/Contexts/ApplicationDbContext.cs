@@ -10,6 +10,7 @@ using ServianOps_Backend.Core.Entities.Base;
 using ServianOps_Backend.Core.Entities.Identity;
 using ServianOps_Backend.Core.Entities.Saas;
 using ServianOps_Backend.Core.Entities.Crm;
+using ServianOps_Backend.Core.Entities.Jobs;
 using ServianOps_Backend.Core.Interfaces;
 
 namespace ServianOps_Backend.EntityFramework.Contexts
@@ -37,6 +38,10 @@ namespace ServianOps_Backend.EntityFramework.Contexts
         public DbSet<CustomerContact> CustomerContacts { get; set; }
         public DbSet<Site> Sites { get; set; }
         public DbSet<SiteContact> SiteContacts { get; set; }
+
+        public DbSet<Trade> Trades { get; set; }
+        public DbSet<Job> Jobs { get; set; }
+        public DbSet<JobAttachment> JobAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

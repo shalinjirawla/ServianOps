@@ -12,6 +12,24 @@ namespace ServianOps_Backend.EntityFramework.Repositories
         {
         }
 
+        public override async Task<System.Collections.Generic.IReadOnlyList<User>> GetPagedAsync(int pageNumber, int pageSize)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Tenant)
+                .AsNoTracking()
+                .OrderByDescending(u => u.CreationTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public override async Task<User> GetByIdAsync(long id)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Tenant)
+                .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+        }
+
         public async Task<User> GetByEmailAsync(string email)
         {
             // This will automatically be filtered by TenantId due to Global Query Filter!
@@ -46,6 +64,21 @@ namespace ServianOps_Backend.EntityFramework.Repositories
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+        }
+
+        public async Task<System.Collections.Generic.IReadOnlyList<User>> GetTenantAdministratorsAsync(long tenantId)
+        {
+            var query = from u in _dbContext.Users.IgnoreQueryFilters()
+                        join ur in _dbContext.UserRoles.IgnoreQueryFilters() on u.Id equals ur.UserId
+                        join r in _dbContext.Roles.IgnoreQueryFilters() on ur.RoleId equals r.Id
+                        where r.Name == "Administrator" 
+                              && u.TenantId == tenantId 
+                              && !u.IsDeleted 
+                              && !ur.IsDeleted 
+                              && !r.IsDeleted
+                        select u;
+
+            return await query.ToListAsync();
         }
     }
 }

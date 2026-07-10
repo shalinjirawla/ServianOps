@@ -19,10 +19,10 @@ namespace ServianOps_Backend.Core.Entities.Crm
         public string PostCode { get; set; }
         public string MobileNumber { get; set; }
 
-        public string AccessDetails { get; set; }
-        public string ParkingInformation { get; set; }
-        public string KeysOrCode { get; set; }
-        public string SiteNotes { get; set; }
+        public string? AccessDetails { get; set; }
+        public string? ParkingInformation { get; set; }
+        public string? KeysOrCode { get; set; }
+        public string? SiteNotes { get; set; }
 
         public long? AccountManagerId { get; set; }
         public User AccountManager { get; set; }

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ServianOps_Backend.Application.DTOs;
 using ServianOps_Backend.Application.DTOs.Crm;
+using ServianOps_Backend.Application.DTOs.Shared;
 using ServianOps_Backend.Application.Interfaces.Crm;
 using ServianOps_Backend.Core.Entities.Crm;
 using ServianOps_Backend.Core.Interfaces.Repositories.Crm;
@@ -115,6 +117,13 @@ namespace ServianOps_Backend.Application.Services.Crm
                 return new SiteListDto
                 {
                     Id = s.Id,
+                    Customer = s.Customer != null ? new CustomerSummaryDto
+                    {
+                        Id = s.Customer.Id,
+                        Name = s.Customer.Name,
+                        CompanyName = s.Customer.CompanyName,
+                        MobileNumber = s.Customer.MobileNumber
+                    } : null,
                     SiteName = s.SiteName,
                     CompanyName = s.CompanyName,
                     MobileNumber = s.MobileNumber,
@@ -125,6 +134,20 @@ namespace ServianOps_Backend.Application.Services.Crm
                     IsActive = s.IsActive
                 };
             }).ToList();
+        }
+
+        public async Task<IReadOnlyList<DropdownDto>> GetSitesByCustomerDropdownAsync(long customerId)
+        {
+            var sites = await _repository.GetAllAsync();
+            return sites
+                .Where(s => s.CustomerId == customerId)
+                .Select(s => new DropdownDto
+                {
+                    Id = s.Id,
+                    Name = s.SiteName
+                })
+                .OrderBy(s => s.Name)
+                .ToList();
         }
 
         public async Task DeleteAsync(long id)
@@ -148,6 +171,13 @@ namespace ServianOps_Backend.Application.Services.Crm
             {
                 Id = entity.Id,
                 CustomerId = entity.CustomerId,
+                Customer = entity.Customer != null ? new CustomerSummaryDto
+                {
+                    Id = entity.Customer.Id,
+                    Name = entity.Customer.Name,
+                    CompanyName = entity.Customer.CompanyName,
+                    MobileNumber = entity.Customer.MobileNumber
+                } : null,
                 SiteName = entity.SiteName,
                 CompanyName = entity.CompanyName,
                 Area = entity.Area,

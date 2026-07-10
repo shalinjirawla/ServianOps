@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ServianOps_Backend.Application.DTOs.Tenant;
+using ServianOps_Backend.Application.DTOs.Shared;
 using ServianOps_Backend.Core.Entities.Identity;
 using ServianOps_Backend.Core.Entities.Saas;
 using ServianOps_Backend.Core.Interfaces.Repositories;
@@ -120,6 +122,8 @@ namespace ServianOps_Backend.Application.Services
             var tenant = await _tenantRepository.GetByTenancyNameAsync(TenancyName);
             if (tenant == null) return null;
 
+            var admins = await _userService.GetTenantAdministratorsAsync(tenant.Id);
+
             return new TenantDto
             {
                 Id = tenant.Id,
@@ -141,34 +145,70 @@ namespace ServianOps_Backend.Application.Services
                     IsActive = tenant.Plan.IsActive, 
                     CreationTime = tenant.Plan.CreationTime 
                 } : null,
+                Users = admins.Select(a => new UserSummaryDto 
+                { 
+                    Id = a.Id, 
+                    FirstName = a.FirstName, 
+                    LastName = a.LastName, 
+                    Email = a.Email 
+                }).ToList(),
                 IsActive = tenant.IsActive
             };
         }
         public async Task<IReadOnlyList<TenantDto>> GetTenantsPagedAsync(int pageNumber, int pageSize)
         {
             var tenants = await _tenantRepository.GetPagedAsync(pageNumber, pageSize);
-            return tenants.Select(t => new TenantDto
+            var result = new List<TenantDto>();
+
+            foreach (var t in tenants)
             {
-                Id = t.Id,
-                TenancyName = t.TenancyName,
-                CompanyName = t.CompanyName,
-                PlanId = t.PlanId,
-                Plan = t.Plan != null ? new ServianOps_Backend.Application.DTOs.Plan.PlanDto 
-                { 
-                    Id = t.Plan.Id, 
-                    PlanName = t.Plan.PlanName, 
-                    MaxUsers = t.Plan.MaxUsers, 
-                    MaxProjects = t.Plan.MaxProjects, 
-                    MaxStorageGB = t.Plan.MaxStorageGB, 
-                    Price = t.Plan.Price, 
-                    BillingCycle = t.Plan.BillingCycle, 
-                    IsTrialAvailable = t.Plan.IsTrialAvailable, 
-                    TrialDays = t.Plan.TrialDays, 
-                    IsActive = t.Plan.IsActive, 
-                    CreationTime = t.Plan.CreationTime 
-                } : null,
-                IsActive = t.IsActive
-            }).ToList();
+                var admins = await _userService.GetTenantAdministratorsAsync(t.Id);
+                result.Add(new TenantDto
+                {
+                    Id = t.Id,
+                    TenancyName = t.TenancyName,
+                    CompanyName = t.CompanyName,
+                    PlanId = t.PlanId,
+                    Plan = t.Plan != null ? new ServianOps_Backend.Application.DTOs.Plan.PlanDto 
+                    { 
+                        Id = t.Plan.Id, 
+                        PlanName = t.Plan.PlanName, 
+                        MaxUsers = t.Plan.MaxUsers, 
+                        MaxProjects = t.Plan.MaxProjects, 
+                        MaxStorageGB = t.Plan.MaxStorageGB, 
+                        Price = t.Plan.Price, 
+                        BillingCycle = t.Plan.BillingCycle, 
+                        IsTrialAvailable = t.Plan.IsTrialAvailable, 
+                        TrialDays = t.Plan.TrialDays, 
+                        IsActive = t.Plan.IsActive, 
+                        CreationTime = t.Plan.CreationTime 
+                    } : null,
+                    Users = admins.Select(a => new UserSummaryDto 
+                    { 
+                        Id = a.Id, 
+                        FirstName = a.FirstName, 
+                        LastName = a.LastName, 
+                        Email = a.Email 
+                    }).ToList(),
+                    IsActive = t.IsActive
+                });
+            }
+            return result;
+        }
+
+        public async Task UpdateTenantAsync(long id, CreateTenantDto dto)
+        {
+            var tenant = await _tenantRepository.GetByIdAsync(id);
+            if (tenant == null) throw new Exception("Tenant not found");
+            tenant.CompanyName = dto.CompanyName;
+            tenant.PlanId = dto.PlanId;
+            await _tenantRepository.UpdateAsync(tenant);
+        }
+        public async Task DeleteTenantAsync(long id)
+        {
+            var tenant = await _tenantRepository.GetByIdAsync(id);
+            if (tenant == null) throw new Exception("Tenant not found");
+            await _tenantRepository.DeleteAsync(tenant);
         }
     }
 }

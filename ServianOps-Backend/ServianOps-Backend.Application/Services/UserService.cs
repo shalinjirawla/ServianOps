@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ServianOps_Backend.Application.DTOs.User;
+using ServianOps_Backend.Application.DTOs.Shared;
 using ServianOps_Backend.Core.Entities.Identity;
 using ServianOps_Backend.Core.Interfaces.Repositories;
 using ServianOps_Backend.Application.Interfaces;
@@ -91,6 +92,12 @@ namespace ServianOps_Backend.Application.Services
             return users.Select(MapToDto).ToList();
         }
 
+        public async Task<IReadOnlyList<UserDto>> GetTenantAdministratorsAsync(long tenantId)
+        {
+            var users = await _userRepository.GetTenantAdministratorsAsync(tenantId);
+            return users.Select(MapToDto).ToList();
+        }
+
         public async Task UpdateUserAsync(long id, CreateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(id);
@@ -129,6 +136,12 @@ namespace ServianOps_Backend.Application.Services
             {
                 Id = user.Id,
                 TenantId = user.TenantId,
+                Tenant = user.Tenant != null ? new TenantSummaryDto 
+                {
+                    Id = user.Tenant.Id,
+                    CompanyName = user.Tenant.CompanyName,
+                    TenancyName = user.Tenant.TenancyName
+                } : null,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,

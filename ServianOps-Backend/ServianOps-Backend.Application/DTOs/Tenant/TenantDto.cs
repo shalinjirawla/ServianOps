@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using ServianOps_Backend.Application.DTOs.Plan;
+using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.Tenant
 {
@@ -21,5 +23,7 @@ namespace ServianOps_Backend.Application.DTOs.Tenant
         public string Currency { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreationTime { get; set; }
+        
+        public List<UserSummaryDto> Users { get; set; }
     }
 }
