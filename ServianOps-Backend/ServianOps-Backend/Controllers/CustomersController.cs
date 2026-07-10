@@ -25,11 +25,25 @@ namespace ServianOps_Backend.Controllers
             return Ok(result);
         }
 
+        [HttpGet("dropdown")]
+        public async Task<IActionResult> GetDropdown()
+        {
+            var result = await _service.GetDropdownAsync();
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(long id)
         {
             var result = await _service.GetByIdAsync(id);
             if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpGet("{id}/sites")]
+        public async Task<IActionResult> GetSites(long id, [FromServices] ISiteService siteService)
+        {
+            var result = await siteService.GetSitesByCustomerDropdownAsync(id);
             return Ok(result);
         }
 

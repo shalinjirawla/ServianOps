@@ -88,7 +88,7 @@ namespace ServianOps_Backend.Application.DTOs.Crm
         public bool IsPORequired { get; set; }
 
         public long CustomerTypeId { get; set; }
-        public string CustomerTypeName { get; set; }
+        public CustomerTypeDto CustomerType { get; set; }
         
         public long? AccountManagerId { get; set; }
         public string AccountManagerName { get; set; }
@@ -108,7 +108,7 @@ namespace ServianOps_Backend.Application.DTOs.Crm
         public string CompanyName { get; set; }
         public string MobileNumber { get; set; }
 
-        public string CustomerTypeName { get; set; }
+        public CustomerTypeDto CustomerType { get; set; }
         public string AccountManagerName { get; set; }
 
         // Primary Contact details mapped from the first active contact

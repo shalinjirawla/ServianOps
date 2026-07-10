@@ -12,6 +12,10 @@ using ServianOps_Backend.EntityFramework.Repositories;
 using ServianOps_Backend.EntityFramework.Repositories.Crm;
 using ServianOps_Backend.Application.Interfaces.Crm;
 using ServianOps_Backend.Application.Services.Crm;
+using ServianOps_Backend.Core.Interfaces.Repositories.Jobs;
+using ServianOps_Backend.EntityFramework.Repositories.Jobs;
+using ServianOps_Backend.Application.Interfaces.Jobs;
+using ServianOps_Backend.Application.Services.Jobs;
 using ServianOps_Backend.Infrastructure.Authentication;
 using ServianOps_Backend.Infrastructure.Multitenancy;
 using FluentValidation;
@@ -111,6 +115,11 @@ builder.Services.AddScoped<ICustomerContactRepository, CustomerContactRepository
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteContactRepository, SiteContactRepository>();
 
+// Jobs Repositories
+builder.Services.AddScoped<ITradeRepository, TradeRepository>();
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IJobAttachmentRepository, JobAttachmentRepository>();
+
 // Services
 builder.Services.AddScoped<IPlanService, PlanService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
@@ -121,6 +130,10 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ICustomerTypeService, CustomerTypeService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISiteService, SiteService>();
+
+// Jobs Services
+builder.Services.AddScoped<ITradeService, TradeService>();
+builder.Services.AddScoped<IJobService, JobService>();
 
 
 
