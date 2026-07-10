@@ -1,0 +1,102 @@
+<app-topbar title="Quotes" subtitle="Follow-up quotes linked to jobs"></app-topbar>
+<div class="p-4 md:p-6 space-y-4">
+  <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
+    <div *ngFor="let s of summary" class="card">
+      <div class="p-5">
+        <div class="text-sm text-muted-foreground">{{ s.l }}</div>
+        <div class="font-display text-3xl font-bold mt-1" [ngClass]="s.tone">{{ s.v }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="p-4 flex flex-wrap justify-between items-center border-b border-border bg-muted/10 gap-3">
+      <div class="relative flex-1 min-w-64">
+        <app-icon name="search" [size]="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
+        <input placeholder="Search quotes by ID, job, client or scope" class="input pl-9" [(ngModel)]="searchQuery" />
+      </div>
+      <button type="button" class="btn btn-sm btn-primary bg-gradient-primary">
+        <app-icon name="plus" [size]="16"></app-icon> New Quote
+      </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-muted/20">
+            <th (click)="setSort('id')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Quote
+                <app-icon *ngIf="sortField === 'id'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th (click)="setSort('job')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Linked job
+                <app-icon *ngIf="sortField === 'job'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th (click)="setSort('client')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Client
+                <app-icon *ngIf="sortField === 'client'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Scope</th>
+            <th (click)="setSort('value')" class="h-11 px-4 text-right align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center justify-end gap-1">
+                Value
+                <app-icon *ngIf="sortField === 'value'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th (click)="setSort('status')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Status
+                <app-icon *ngIf="sortField === 'status'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Created</th>
+            <th class="h-11 px-4 w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of quotes" class="border-b border-border hover:bg-muted/50 last:border-0">
+            <td class="p-4 align-middle font-mono text-sm text-foreground">{{ q.id }}</td>
+            <td class="p-4 align-middle font-mono text-xs text-primary font-bold">{{ q.job }}</td>
+            <td class="p-4 align-middle text-foreground font-medium">{{ q.client }}</td>
+            <td class="p-4 align-middle max-w-xs truncate text-muted-foreground">{{ q.scope }}</td>
+            <td class="p-4 align-middle text-right font-semibold text-foreground">£{{ fmt(q.value) }}</td>
+            <td class="p-4 align-middle">
+              <span class="badge border capitalize" [ngClass]="tone[q.status]">{{ q.status }}</span>
+            </td>
+            <td class="p-4 align-middle text-sm text-muted-foreground">{{ q.created }}</td>
+            <td class="p-4 align-middle">
+              <button type="button" class="btn btn-ghost btn-icon">
+                <app-icon name="more-horizontal" [size]="16"></app-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="quotes.length === 0">
+            <td colspan="8" class="p-8 text-center text-muted-foreground">No quotes found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
+      <div class="text-xs text-muted-foreground">
+        Showing {{ filteredAndSortedQuotes.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
+        {{ mathMin(currentPage * pageSize, filteredAndSortedQuotes.length) }} of {{ filteredAndSortedQuotes.length }} quotes
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+          <app-icon name="chevron-left" [size]="14"></app-icon> Previous
+        </button>
+        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+          Next <app-icon name="chevron-right" [size]="14"></app-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,69 @@
+<app-topbar title="Engineers" subtitle="Field team status, trades and current workload"></app-topbar>
+<div class="p-4 md:p-6 space-y-4">
+  <div class="card p-4 flex flex-wrap gap-3 items-center">
+    <div class="relative flex-1 min-w-64">
+      <app-icon name="search" [size]="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
+      <input placeholder="Search by name, trade or region" class="input pl-9" [(ngModel)]="searchQuery" />
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" (click)="setSort('name')" class="btn btn-outline gap-1.5" [class.bg-muted]="sortField === 'name'">
+        Sort by Name
+        <app-icon *ngIf="sortField === 'name'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+      </button>
+      <button type="button" (click)="setSort('availability')" class="btn btn-outline gap-1.5" [class.bg-muted]="sortField === 'availability'">
+        Sort by Status
+        <app-icon *ngIf="sortField === 'availability'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div *ngFor="let e of engineers" class="card overflow-hidden">
+      <div class="h-20 bg-gradient-hero"></div>
+      <div class="pt-0 px-6 pb-6 relative">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-accent text-accent-foreground grid place-items-center text-lg font-bold border-4 border-card -mt-8 shadow-elegant">
+          {{ initials(e.name) }}
+        </div>
+        <div class="mt-3 flex items-start justify-between gap-2">
+          <div>
+            <h3 class="font-display text-lg font-semibold text-foreground">{{ e.name }}</h3>
+            <div class="text-xs font-mono text-muted-foreground">{{ e.id }}</div>
+          </div>
+          <span class="badge border" [ngClass]="availTone[e.availability]">{{ e.availability }}</span>
+        </div>
+        <div class="mt-4 space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-muted-foreground"><app-icon name="wrench" [size]="16" class="text-primary"></app-icon> {{ e.trade }}</div>
+          <div class="flex items-center gap-2 text-muted-foreground"><app-icon name="map-pin" [size]="16" class="text-primary"></app-icon> {{ e.region }}</div>
+          <div class="flex items-center gap-2 text-muted-foreground"><app-icon name="star" [size]="16" class="text-accent fill-accent"></app-icon> {{ e.rating }} · {{ e.jobs }} active jobs</div>
+        </div>
+        <div class="mt-4 flex gap-2 justify-end">
+          <button type="button" class="btn btn-icon btn-outline text-primary border-primary/20 hover:bg-primary/5 rounded-lg h-9 w-9 inline-grid place-items-center" title="View Schedule">
+            <app-icon name="calendar" [size]="16"></app-icon>
+          </button>
+          <button type="button" class="btn btn-icon btn-primary bg-gradient-primary rounded-lg h-9 w-9 inline-grid place-items-center" title="Assign Job">
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="engineers.length === 0" class="col-span-full card p-8 text-center text-muted-foreground">
+      No engineers found.
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="card p-4 flex flex-wrap items-center justify-between gap-3 bg-muted/10">
+    <div class="text-xs text-muted-foreground">
+      Showing {{ filteredAndSortedEngineers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
+      {{ mathMin(currentPage * pageSize, filteredAndSortedEngineers.length) }} of {{ filteredAndSortedEngineers.length }} engineers
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+        <app-icon name="chevron-left" [size]="14"></app-icon> Previous
+      </button>
+      <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+        Next <app-icon name="chevron-right" [size]="14"></app-icon>
+      </button>
+    </div>
+  </div>
+</div>

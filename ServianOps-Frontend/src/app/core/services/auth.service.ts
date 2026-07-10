@@ -2,9 +2,10 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
 import { LoginDto, AuthResponseDto, UserSession } from '../models/auth.models';
 import { TokenService } from './token.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -90,7 +91,7 @@ export class AuthService {
 
     // Redirect to login page
     const queryParams = reason ? { reason } : {};
-    this.router.navigate(['/login'], { queryParams });
+    this.router.navigate(['/auth/login'], { queryParams });
   }
 
   /**
@@ -104,5 +105,12 @@ export class AuthService {
     try {
       sessionStorage.clear();
     } catch { }
+  }
+
+  /**
+   * Send forgot password request
+   */
+  forgotPassword(email: string, tenancyName?: string): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/api/auth/forgot-password`, { email, tenancyName });
   }
 }

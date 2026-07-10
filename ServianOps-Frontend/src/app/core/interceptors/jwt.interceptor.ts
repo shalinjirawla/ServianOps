@@ -10,7 +10,7 @@ let isLoggingOut = false;
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenService = inject(TokenService);
   const authService = inject(AuthService);
-  
+
   const token = tokenService.getToken();
   let modifiedReq = req;
 
@@ -32,11 +32,11 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
             // Token is invalid or expired
             if (!isLoggingOut) {
               isLoggingOut = true;
-              
+
               // Extract expiration status
               const isExpired = tokenService.isCurrentTokenExpired();
               authService.clearSessionState();
-              
+
               // Gracefully reset locking state after routing task completes
               setTimeout(() => {
                 isLoggingOut = false;
