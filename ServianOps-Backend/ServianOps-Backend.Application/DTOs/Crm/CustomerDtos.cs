@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
+using ServianOps_Backend.Application.DTOs.Base;
 
 namespace ServianOps_Backend.Application.DTOs.Crm
 {
-    public class CustomerContactDto
+    public class CustomerContactDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string MobileNumber { get; set; }
         public string Email { get; set; }
-        public bool IsActive { get; set; }
     }
 
     public class CreateCustomerDto
@@ -70,9 +69,8 @@ namespace ServianOps_Backend.Application.DTOs.Crm
         public string ContactEmail { get; set; }
     }
 
-    public class CustomerDetailDto
+    public class CustomerDetailDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         public string CompanyName { get; set; }
         public string Area { get; set; }
@@ -95,15 +93,11 @@ namespace ServianOps_Backend.Application.DTOs.Crm
 
         public long? SellingRateId { get; set; }
 
-        public DateTime CreationTime { get; set; }
-        public bool IsActive { get; set; }
-
         public List<CustomerContactDto> Contacts { get; set; }
     }
 
-    public class CustomerListDto
+    public class CustomerListDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         public string CompanyName { get; set; }
         public string MobileNumber { get; set; }
@@ -114,8 +108,5 @@ namespace ServianOps_Backend.Application.DTOs.Crm
         // Primary Contact details mapped from the first active contact
         public string PrimaryContactName { get; set; }
         public string PrimaryContactMobile { get; set; }
-
-        public DateTime CreationTime { get; set; }
-        public bool IsActive { get; set; }
     }
 }

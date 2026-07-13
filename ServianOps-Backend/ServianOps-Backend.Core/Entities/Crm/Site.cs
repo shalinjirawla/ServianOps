@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ServianOps_Backend.Core.Entities.Base;
 using ServianOps_Backend.Core.Entities.Identity;
+using ServianOps_Backend.Core.Entities.Jobs;
 
 namespace ServianOps_Backend.Core.Entities.Crm
 {
@@ -28,5 +29,6 @@ namespace ServianOps_Backend.Core.Entities.Crm
         public User AccountManager { get; set; }
 
         public ICollection<SiteContact> SiteContacts { get; set; }
+        public ICollection<Job> Jobs { get; set; }
     }
 }

@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "generate-api": "cd angular/nswag && refresh.bat",
+    "generate-api:watch": "npm run generate-api"
   },
   "prettier": {
     "printWidth": 100,
@@ -49,6 +51,7 @@
     "@angular/compiler-cli": "^21.1.0",
     "@tailwindcss/postcss": "^4.3.2",
     "jsdom": "^27.1.0",
+    "nswag": "^14.7.1",
     "postcss": "^8.5.16",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

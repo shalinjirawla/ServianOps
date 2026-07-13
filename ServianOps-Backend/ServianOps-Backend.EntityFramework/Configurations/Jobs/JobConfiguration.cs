@@ -17,12 +17,12 @@ namespace ServianOps_Backend.EntityFramework.Configurations.Jobs
 
             // Relationships
             builder.HasOne(x => x.Customer)
-                .WithMany()
+                .WithMany(c => c.Jobs)
                 .HasForeignKey(x => x.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.Site)
-                .WithMany()
+                .WithMany(s => s.Jobs)
                 .HasForeignKey(x => x.SiteId)
                 .OnDelete(DeleteBehavior.Restrict);
 

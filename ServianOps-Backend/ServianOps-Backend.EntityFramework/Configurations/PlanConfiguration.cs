@@ -11,6 +11,11 @@ namespace ServianOps_Backend.EntityFramework.Configurations
             builder.HasKey(x => x.Id);
             builder.Property(x => x.PlanName).IsRequired().HasMaxLength(100);
             builder.Property(x => x.BillingCycle).HasMaxLength(20);
+
+            builder.HasMany(x => x.Tenants)
+                .WithOne(t => t.Plan)
+                .HasForeignKey(t => t.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

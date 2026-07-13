@@ -45,6 +45,11 @@ namespace ServianOps_Backend.EntityFramework.Repositories
                 .ToListAsync();
         }
 
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbContext.Set<T>();
+        }
+
         public async Task<T> AddAsync(T entity)
         {
             await _dbContext.Set<T>().AddAsync(entity);
