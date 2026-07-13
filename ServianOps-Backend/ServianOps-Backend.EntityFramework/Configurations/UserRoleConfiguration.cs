@@ -13,12 +13,12 @@ namespace ServianOps_Backend.EntityFramework.Configurations
             builder.HasIndex(x => new { x.UserId, x.RoleId }).IsUnique();
             
             builder.HasOne(x => x.User)
-                   .WithMany()
+                   .WithMany(u => u.UserRoles)
                    .HasForeignKey(x => x.UserId)
                    .OnDelete(DeleteBehavior.Cascade);
                    
             builder.HasOne(x => x.Role)
-                   .WithMany()
+                   .WithMany(r => r.UserRoles)
                    .HasForeignKey(x => x.RoleId)
                    .OnDelete(DeleteBehavior.Cascade);
         }

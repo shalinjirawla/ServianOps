@@ -127,6 +127,26 @@ namespace ServianOps_Backend.Application.Services
             return tenantDto;
         }
 
+        public async Task<TenantDto> GetTenantByIdAsync(long id)
+        {
+            var tenant = await _tenantRepository.GetQueryable()
+                .Include(t => t.Plan)
+                .Include(t => t.Users)
+                    .ThenInclude(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (tenant == null) return null;
+
+            var tenantDto = _mapper.Map<TenantDto>(tenant);
+            tenantDto.Users = tenant.Users
+                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "Administrator"))
+                .Select(u => _mapper.Map<UserSummaryDto>(u))
+                .ToList();
+
+            return tenantDto;
+        }
+
         public async Task<IReadOnlyList<TenantDto>> GetTenantsPagedAsync(int pageNumber, int pageSize)
         {
             var tenants = await _tenantRepository.GetQueryable()
