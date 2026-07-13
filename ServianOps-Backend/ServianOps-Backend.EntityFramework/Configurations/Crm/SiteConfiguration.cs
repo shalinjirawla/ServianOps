@@ -27,7 +27,7 @@ namespace ServianOps_Backend.EntityFramework.Configurations.Crm
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.AccountManager)
-                .WithMany()
+                .WithMany(u => u.ManagedSites)
                 .HasForeignKey(x => x.AccountManagerId)
                 .OnDelete(DeleteBehavior.SetNull);
         }

@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
+using ServianOps_Backend.Application.DTOs.Base;
 using ServianOps_Backend.Application.DTOs.Plan;
 using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.Tenant
 {
-    public class TenantDto
+    public class TenantDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string CompanyName { get; set; }
         public string TenancyName { get; set; }
 
@@ -21,8 +21,6 @@ namespace ServianOps_Backend.Application.DTOs.Tenant
         public string LogoUrl { get; set; }
         public string TimeZone { get; set; }
         public string Currency { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime CreationTime { get; set; }
         
         public List<UserSummaryDto> Users { get; set; }
     }

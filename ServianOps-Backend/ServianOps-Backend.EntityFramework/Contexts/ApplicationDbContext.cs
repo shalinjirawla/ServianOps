@@ -119,9 +119,9 @@ namespace ServianOps_Backend.EntityFramework.Contexts
                 _newValue = newValue;
             }
 
-            public override Expression Visit(Expression node)
+            public override Expression? Visit(Expression? node)
             {
-                if (node == _oldValue)
+                if (node != null && node == _oldValue)
                     return _newValue;
                 return base.Visit(node);
             }

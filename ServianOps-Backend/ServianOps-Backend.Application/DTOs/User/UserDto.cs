@@ -1,11 +1,11 @@
 using System;
+using ServianOps_Backend.Application.DTOs.Base;
 using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.User
 {
-    public class UserDto
+    public class UserDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public long? TenantId { get; set; }
         public TenantSummaryDto Tenant { get; set; }
         public string FirstName { get; set; }
@@ -15,6 +15,5 @@ namespace ServianOps_Backend.Application.DTOs.User
         public string ProfileImage { get; set; }
         public DateTime? LastLogin { get; set; }
         public bool IsEmailVerified { get; set; }
-        public bool IsActive { get; set; }
     }
 }
