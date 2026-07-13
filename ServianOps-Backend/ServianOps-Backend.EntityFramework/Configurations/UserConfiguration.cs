@@ -18,7 +18,7 @@ namespace ServianOps_Backend.EntityFramework.Configurations
             builder.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
             
             builder.HasOne(x => x.Tenant)
-                   .WithMany()
+                   .WithMany(t => t.Users)
                    .HasForeignKey(x => x.TenantId)
                    .OnDelete(DeleteBehavior.Cascade);
         }

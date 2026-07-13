@@ -35,6 +35,17 @@ namespace ServianOps_Backend.Controllers
              return Ok(new { CurrentTenantId = _currentTenant.TenantId });
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTenantById(long id)
+        {
+            var tenant = await _tenantService.GetTenantByIdAsync(id);
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+            return Ok(tenant);
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTenant(long id, [FromBody] ServianOps_Backend.Application.DTOs.Tenant.CreateTenantDto dto)
         {
