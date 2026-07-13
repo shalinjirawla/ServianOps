@@ -23,23 +23,29 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-muted/20">
-            <th (click)="setSort('companyName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+            <th (click)="setSort('companyName')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
               <div class="flex items-center gap-1">
                 Tenant / Company
-                <app-icon *ngIf="sortField === 'companyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+                <app-icon *ngIf="sortField === 'companyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
               </div>
             </th>
-            <th (click)="setSort('tenancyName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+            <th (click)="setSort('tenancyName')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
               <div class="flex items-center gap-1">
                 Tenancy Key
-                <app-icon *ngIf="sortField === 'tenancyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+                <app-icon *ngIf="sortField === 'tenancyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
               </div>
             </th>
             <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Admin User</th>
-            <th (click)="setSort('planId')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+            <th (click)="setSort('planId')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
               <div class="flex items-center gap-1">
                 Active Plan
-                <app-icon *ngIf="sortField === 'planId'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+                <app-icon *ngIf="sortField === 'planId'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
               </div>
             </th>
             <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Phone</th>
@@ -49,31 +55,34 @@
           <tr *ngFor="let t of tenants" class="border-b border-border hover:bg-muted/50 last:border-0">
             <td class="p-4 align-middle">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-accent text-accent-foreground grid place-items-center shrink-0">
+                <div
+                  class="w-10 h-10 rounded-lg bg-gradient-accent text-accent-foreground grid place-items-center shrink-0">
                   <app-icon name="server" [size]="16"></app-icon>
                 </div>
                 <div class="min-w-0">
                   <div class="font-medium text-foreground">{{ t.companyName }}</div>
-                  <div class="text-xs text-muted-foreground font-mono">ID: {{ t.id }}</div>
                 </div>
               </div>
             </td>
             <td class="p-4 align-middle font-mono font-bold text-primary">
               {{ t.tenancyName }}
             </td>
-            <td class="p-4 align-middle">
-              <div *ngIf="t.firstName || t.lastName" class="font-medium text-foreground">{{ t.firstName }} {{ t.lastName }}</div>
-              <div *ngIf="t.email" class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
-                <app-icon name="mail" [size]="12" class="text-primary"></app-icon>{{ t.email }}
+            <td class="p-4 align-middle" *ngIf="getAdminUser(t) as admin">
+              <div *ngIf="admin.firstName || admin.lastName" class="font-medium text-foreground">
+                {{ admin.firstName }} {{ admin.lastName }}
               </div>
-              <span *ngIf="!t.firstName && !t.lastName && !t.email" class="text-muted-foreground">—</span>
+              <div *ngIf="admin.email" class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
+                <app-icon name="mail" [size]="12" class="text-primary"></app-icon>{{ admin.email }}
+              </div>
+              <span *ngIf="!admin.firstName && !admin.lastName && !admin.email" class="text-muted-foreground">—</span>
             </td>
             <td class="p-4 align-middle">
-              <span class="badge" [class.badge-secondary]="t.planId === 1" [class.text-success]="t.planId === 3" [class.text-info]="t.planId === 2">
+              <span class="badge" [class.badge-secondary]="t.planId === 1" [class.text-success]="t.planId === 3"
+                [class.text-info]="t.planId === 2">
                 {{ getPlanName(t.planId) }}
               </span>
             </td>
-            <td class="p-4 align-middle text-muted-foreground">{{ t.phone || '—' }}</td>
+            <td class="p-4 align-middle text-muted-foreground">{{ getAdminUser(t)?.phone || '—' }}</td>
           </tr>
           <tr *ngIf="tenants.length === 0">
             <td colspan="5" class="p-8 text-center text-muted-foreground">No tenants found matching your query.</td>
@@ -85,14 +94,17 @@
     <!-- Pagination Controls -->
     <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
       <div class="text-xs text-muted-foreground">
-        Showing {{ filteredAndSortedTenants.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
-        {{ mathMin(currentPage * pageSize, filteredAndSortedTenants.length) }} of {{ filteredAndSortedTenants.length }} tenants
+        Showing {{ filteredAndSortedTenants.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to
+        {{ mathMin(currentPage * pageSize, filteredAndSortedTenants.length) }} of {{ filteredAndSortedTenants.length }}
+        tenants
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1"
+          class="btn btn-xs btn-outline">
           <app-icon name="chevron-left" [size]="14"></app-icon> Previous
         </button>
-        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1"
+          class="btn btn-xs btn-outline">
           Next <app-icon name="chevron-right" [size]="14"></app-icon>
         </button>
       </div>
@@ -145,6 +157,58 @@
           <span *ngIf="submitted && tenantForm.get('tenancyName')?.errors?.['minlength']"
             class="text-xs text-destructive mt-1 block">Key must be at least 2 characters.</span>
         </div>
+      </div>
+
+
+      <div class="space-y-1.5 col-span-2">
+        <label for="logoUpload" class="text-xs font-medium text-muted-foreground">Company Logo *</label>
+
+        <div class="flex items-center gap-4">
+          <!-- Preview -->
+          <div *ngIf="logoPreviewUrl"
+            class="w-16 h-16 rounded-lg border border-border bg-muted/30 grid place-items-center shrink-0 overflow-hidden">
+            <img [src]="logoPreviewUrl" alt="Logo preview" class="w-full h-full object-cover" />
+            <app-icon *ngIf="!logoPreviewUrl" name="image" [size]="20" class="text-muted-foreground"></app-icon>
+          </div>
+
+          <!-- File input -->
+          <div class="flex-1 space-y-1">
+            <input #logoInput id="logoUpload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              (change)="onLogoSelected($event)"
+              class="input h-10 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-muted file:text-foreground file:text-xs file:font-medium hover:file:bg-muted/70 cursor-pointer" />
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">PNG, JPG, SVG, or WebP. Max 2MB.</span>
+              <button *ngIf="logoPreviewUrl" type="button" (click)="removeLogo(logoInput)"
+                class="text-xs text-destructive hover:underline">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <span *ngIf="logoFileError" class="text-xs text-destructive mt-1 block">{{ logoFileError }}</span>
+        <span *ngIf="submitted && !logoFileError && tenantForm.get('logoUrl')?.errors?.['required']"
+          class="text-xs text-destructive mt-1 block">Company logo is required.</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label for="timeZone" class="text-xs font-medium text-muted-foreground">Time Zone *</label>
+          <select id="timeZone" formControlName="timeZone"
+            class="input h-10 select-style bg-background text-foreground">
+            <option *ngFor="let tz of timeZones" [value]="tz.value">{{ tz.label }}</option>
+          </select>
+          <span *ngIf="submitted && tenantForm.get('timeZone')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Time zone is required.</span>
+        </div>
+        <div class="space-y-1.5">
+          <label for="currency" class="text-xs font-medium text-muted-foreground">Currency *</label>
+          <select id="currency" formControlName="currency"
+            class="input h-10 select-style bg-background text-foreground">
+            <option *ngFor="let c of currencies" [value]="c.value">{{ c.label }}</option>
+          </select>
+          <span *ngIf="submitted && tenantForm.get('currency')?.errors?.['required']"
+            class="text-xs text-destructive mt-1 block">Currency is required.</span>
+        </div>
+
       </div>
     </div>
 

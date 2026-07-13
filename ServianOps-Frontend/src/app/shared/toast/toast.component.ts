@@ -13,11 +13,13 @@ import { ToastService } from './toast.service';
           class="rounded-lg border shadow-elegant px-4 py-3 text-sm bg-card text-card-foreground flex items-center gap-2"
           [class.border-success]="t.kind === 'success'"
           [class.border-destructive]="t.kind === 'error'"
+          [class.border-warning]="t.kind === 'warning'"
         >
           <span
             class="w-2 h-2 rounded-full shrink-0"
             [class.bg-success]="t.kind === 'success'"
             [class.bg-destructive]="t.kind === 'error'"
+            [class.bg-warning]="t.kind === 'warning'"
           ></span>
           {{ t.text }}
         </div>
