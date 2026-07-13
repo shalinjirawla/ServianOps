@@ -30,6 +30,13 @@ builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 // Register all validators from the Application assembly
 builder.Services.AddValidatorsFromAssemblyContaining<ServianOps_Backend.Application.Validations.LoginDtoValidator>();
+builder.Services.AddAutoMapper(cfg => 
+{
+    cfg.AddProfile<ServianOps_Backend.Application.Mappings.IdentityMappingProfile>();
+    cfg.AddProfile<ServianOps_Backend.Application.Mappings.SaasMappingProfile>();
+    cfg.AddProfile<ServianOps_Backend.Application.Mappings.JobMappingProfile>();
+    cfg.AddProfile<ServianOps_Backend.Application.Mappings.CrmMappingProfile>();
+});
 builder.Services.AddEndpointsApiExplorer();
 
 //Enable CORS

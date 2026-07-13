@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ServianOps_Backend.Core.Entities.Base;
 
 namespace ServianOps_Backend.Core.Entities.Saas
@@ -13,5 +14,7 @@ namespace ServianOps_Backend.Core.Entities.Saas
         public string BillingCycle { get; set; } // Monthly/Yearly
         public bool IsTrialAvailable { get; set; }
         public int TrialDays { get; set; }
+
+        public ICollection<Tenant> Tenants { get; set; }
     }
 }

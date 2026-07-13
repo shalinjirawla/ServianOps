@@ -1,3 +1,5 @@
+using ServianOps_Backend.Application.DTOs.Base;
+
 namespace ServianOps_Backend.Application.DTOs.Jobs
 {
     public class CreateTradeDto
@@ -10,15 +12,13 @@ namespace ServianOps_Backend.Application.DTOs.Jobs
         public string Name { get; set; }
     }
 
-    public class TradeDto
+    public class TradeDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string Name { get; set; }
     }
     
-    public class TradeListDto
+    public class TradeListDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string Name { get; set; }
     }
 }

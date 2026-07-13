@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using ServianOps_Backend.Application.DTOs.Jobs;
 using ServianOps_Backend.Application.DTOs.Shared;
 using ServianOps_Backend.Application.Interfaces.Jobs;
@@ -21,24 +23,26 @@ namespace ServianOps_Backend.Application.Services.Jobs
         private readonly ISiteRepository _siteRepository;
         private readonly ITradeRepository _tradeRepository;
         private readonly IWebHostEnvironment _env;
+        private readonly IMapper _mapper;
 
         public JobService(
             IJobRepository jobRepository, 
             IJobAttachmentRepository attachmentRepository, 
             ISiteRepository siteRepository,
             ITradeRepository tradeRepository,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IMapper mapper)
         {
             _jobRepository = jobRepository;
             _attachmentRepository = attachmentRepository;
             _siteRepository = siteRepository;
             _tradeRepository = tradeRepository;
             _env = env;
+            _mapper = mapper;
         }
 
         public async Task<JobDetailDto> CreateAsync(CreateJobDto dto)
         {
-            // Validate Site belongs to Customer
             var site = await _siteRepository.GetByIdAsync(dto.SiteId);
             if (site == null || site.CustomerId != dto.CustomerId)
             {
@@ -50,19 +54,9 @@ namespace ServianOps_Backend.Application.Services.Jobs
 
             try
             {
-                var job = new Job
-                {
-                    JobNumber = GenerateJobNumber(),
-                    CustomerId = dto.CustomerId,
-                    SiteId = dto.SiteId,
-                    TradeId = dto.TradeId,
-                    Description = dto.Description,
-                    Priority = dto.Priority,
-                    PONumber = dto.PONumber,
-                    Budget = dto.Budget,
-                    NTE = dto.NTE,
-                    Attachments = new List<JobAttachment>()
-                };
+                var job = _mapper.Map<Job>(dto);
+                job.JobNumber = GenerateJobNumber();
+                job.Attachments = new List<JobAttachment>();
 
                 await _jobRepository.AddAsync(job);
 
@@ -90,10 +84,12 @@ namespace ServianOps_Backend.Application.Services.Jobs
 
         public async Task<JobDetailDto> UpdateAsync(long id, UpdateJobDto dto)
         {
-            var job = await _jobRepository.GetJobWithDetailsAsync(id);
+            var job = await _jobRepository.GetQueryable()
+                .Include(j => j.Attachments)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
             if (job == null) throw new Exception("Job not found.");
 
-            // Validate Site
             var site = await _siteRepository.GetByIdAsync(dto.SiteId);
             if (site == null || site.CustomerId != dto.CustomerId)
             {
@@ -102,15 +98,7 @@ namespace ServianOps_Backend.Application.Services.Jobs
 
             try
             {
-                job.CustomerId = dto.CustomerId;
-                job.SiteId = dto.SiteId;
-                job.TradeId = dto.TradeId;
-                job.Description = dto.Description;
-                job.Priority = dto.Priority;
-                job.PONumber = dto.PONumber;
-                job.Budget = dto.Budget;
-                job.NTE = dto.NTE;
-
+                _mapper.Map(dto, job);
                 await _jobRepository.UpdateAsync(job);
 
                 if (dto.Attachments != null && dto.Attachments.Count > 0)
@@ -136,93 +124,46 @@ namespace ServianOps_Backend.Application.Services.Jobs
 
         public async Task<JobDetailDto> GetByIdAsync(long id)
         {
-            var job = await _jobRepository.GetJobWithDetailsAsync(id);
-            if (job == null) return null;
+            var job = await _jobRepository.GetQueryable()
+                .Include(j => j.Customer)
+                .Include(j => j.Site)
+                .Include(j => j.Trade)
+                .Include(j => j.Attachments)
+                .FirstOrDefaultAsync(j => j.Id == id);
 
-            return new JobDetailDto
-            {
-                Id = job.Id,
-                JobNumber = job.JobNumber,
-                CustomerId = job.CustomerId,
-                Customer = job.Customer != null ? new CustomerSummaryDto 
-                { 
-                    Id = job.Customer.Id, 
-                    Name = job.Customer.Name, 
-                    CompanyName = job.Customer.CompanyName, 
-                    MobileNumber = job.Customer.MobileNumber 
-                } : null,
-                SiteId = job.SiteId,
-                Site = job.Site != null ? new SiteSummaryDto 
-                { 
-                    Id = job.Site.Id, 
-                    SiteName = job.Site.SiteName, 
-                    City = job.Site.City, 
-                    PostCode = job.Site.PostCode 
-                } : null,
-                TradeId = job.TradeId,
-                Trade = job.Trade != null ? new TradeDto 
-                { 
-                    Id = job.Trade.Id, 
-                    Name = job.Trade.Name 
-                } : null,
-                Description = job.Description,
-                Priority = job.Priority,
-                PONumber = job.PONumber,
-                Budget = job.Budget,
-                NTE = job.NTE,
-                CreationTime = job.CreationTime,
-                IsActive = job.IsActive,
-                Attachments = job.Attachments?.Where(x => !x.IsDeleted).Select(a => new JobAttachmentDto
-                {
-                    Id = a.Id,
-                    Link = a.Link
-                }).ToList() ?? new List<JobAttachmentDto>()
-            };
+            return job == null ? null : _mapper.Map<JobDetailDto>(job);
         }
 
         public async Task<IReadOnlyList<JobListDto>> GetAllPagedAsync(int pageNumber, int pageSize, string searchTerm)
         {
-            var jobs = await _jobRepository.GetPagedJobsWithDetailsAsync(pageNumber, pageSize);
+            var query = _jobRepository.GetQueryable()
+                .Include(j => j.Customer)
+                .Include(j => j.Site)
+                .Include(j => j.Trade)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                jobs = jobs.Where(x => 
-                    x.JobNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    x.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
-                ).ToList();
+                query = query.Where(x => 
+                    x.JobNumber.Contains(searchTerm) ||
+                    x.Description.Contains(searchTerm)
+                );
             }
 
-            return jobs.Select(job => new JobListDto
-            {
-                Id = job.Id,
-                JobNumber = job.JobNumber,
-                Customer = job.Customer != null ? new CustomerSummaryDto 
-                { 
-                    Id = job.Customer.Id, 
-                    Name = job.Customer.Name, 
-                    CompanyName = job.Customer.CompanyName, 
-                    MobileNumber = job.Customer.MobileNumber 
-                } : null,
-                Site = job.Site != null ? new SiteSummaryDto 
-                { 
-                    Id = job.Site.Id, 
-                    SiteName = job.Site.SiteName, 
-                    City = job.Site.City, 
-                    PostCode = job.Site.PostCode 
-                } : null,
-                Trade = job.Trade != null ? new TradeDto 
-                { 
-                    Id = job.Trade.Id, 
-                    Name = job.Trade.Name 
-                } : null,
-                Priority = job.Priority,
-                CreationTime = job.CreationTime
-            }).ToList();
+            var jobs = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return _mapper.Map<List<JobListDto>>(jobs);
         }
 
         public async Task DeleteAsync(long id)
         {
-            var job = await _jobRepository.GetJobWithDetailsAsync(id);
+            var job = await _jobRepository.GetQueryable()
+                .Include(j => j.Attachments)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
             if (job != null)
             {
                 foreach (var attachment in job.Attachments)
@@ -241,7 +182,6 @@ namespace ServianOps_Backend.Application.Services.Jobs
                 throw new Exception("Attachment not found.");
             }
 
-            // Optional: Physically delete file here. Soft delete in DB.
             var filePath = Path.Combine(_env.WebRootPath, attachment.Link);
             if (File.Exists(filePath))
             {
@@ -276,7 +216,6 @@ namespace ServianOps_Backend.Application.Services.Jobs
                     await file.CopyToAsync(stream);
                 }
 
-                // Return relative path to store in DB
                 uploadedPaths.Add($"Uploads/Jobs/{jobId}/{uniqueFileName}");
             }
 

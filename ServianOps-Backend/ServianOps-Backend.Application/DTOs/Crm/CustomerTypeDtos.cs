@@ -1,13 +1,11 @@
 using System;
+using ServianOps_Backend.Application.DTOs.Base;
 
 namespace ServianOps_Backend.Application.DTOs.Crm
 {
-    public class CustomerTypeDto
+    public class CustomerTypeDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string Name { get; set; }
-        public DateTime CreationTime { get; set; }
-        public bool IsActive { get; set; }
     }
 
     public class CreateCustomerTypeDto

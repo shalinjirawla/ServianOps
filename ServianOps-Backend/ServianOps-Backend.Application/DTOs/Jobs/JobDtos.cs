@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using ServianOps_Backend.Core.Enums;
+using ServianOps_Backend.Application.DTOs.Base;
 using ServianOps_Backend.Application.DTOs.Shared;
 
 namespace ServianOps_Backend.Application.DTOs.Jobs
@@ -34,9 +35,8 @@ namespace ServianOps_Backend.Application.DTOs.Jobs
         public IFormFileCollection Attachments { get; set; }
     }
 
-    public class JobDetailDto
+    public class JobDetailDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string JobNumber { get; set; }
         
         public long CustomerId { get; set; }
@@ -54,20 +54,15 @@ namespace ServianOps_Backend.Application.DTOs.Jobs
         public decimal Budget { get; set; }
         public decimal NTE { get; set; }
 
-        public DateTime CreationTime { get; set; }
-        public bool IsActive { get; set; }
-
         public List<JobAttachmentDto> Attachments { get; set; }
     }
 
-    public class JobListDto
+    public class JobListDto : BaseAuditDto
     {
-        public long Id { get; set; }
         public string JobNumber { get; set; }
         public CustomerSummaryDto Customer { get; set; }
         public SiteSummaryDto Site { get; set; }
         public TradeDto Trade { get; set; }
         public PriorityEnum Priority { get; set; }
-        public DateTime CreationTime { get; set; }
     }
 }
