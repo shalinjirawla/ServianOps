@@ -16,7 +16,7 @@ namespace ServianOps_Backend.EntityFramework.Configurations
             
 
             builder.HasOne(x => x.Plan)
-                   .WithMany()
+                   .WithMany(p => p.Tenants)
                    .HasForeignKey(x => x.PlanId)
                    .OnDelete(DeleteBehavior.Restrict);
         }
