@@ -1,14 +1,16 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Jobs;
-using ServianOps_Backend.Application.Interfaces.Jobs;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.TradeModule.Trade;
+using ServianOps_Backend.Application.TradeModule.Trade.TradeDto;
 
 namespace ServianOps_Backend.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/trade")]
+    [Authorize]
     public class TradesController : ControllerBase
     {
         private readonly ITradeService _tradeService;
@@ -18,39 +20,53 @@ namespace ServianOps_Backend.Controllers
             _tradeService = tradeService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateTradeDto dto)
+        [HttpGet("get-all-trades")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<TradeListDto>>), 200)]
+        public async Task<IActionResult> GetAllTrades([FromQuery] TradeFilterDto filter)
         {
-            var result = await _tradeService.CreateAsync(dto);
+            var result = await _tradeService.GetAllTrades(filter);
             return Ok(result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] UpdateTradeDto dto)
+        [HttpGet("get-trade-lookup")]
+        [ProducesResponseType(typeof(StandardResponse<IReadOnlyList<TradeLookupDto>>), 200)]
+        public async Task<IActionResult> GetTradeLookup()
         {
-            var result = await _tradeService.UpdateAsync(id, dto);
+            var result = await _tradeService.GetTradeLookup();
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(long id)
+        [HttpGet("get-trade-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<TradeDetailDto>), 200)]
+        public async Task<IActionResult> GetTradeById(long id)
         {
-            var result = await _tradeService.GetByIdAsync(id);
-            if (result == null) return NotFound();
+            var result = await _tradeService.GetTradeById(id);
+            if (!result.Success) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null)
+        [HttpPost("create-trade")]
+        [ProducesResponseType(typeof(StandardResponse<TradeDetailDto>), 201)]
+        public async Task<IActionResult> CreateTrade([FromBody] CreateTradeDto dto)
         {
-            var result = await _tradeService.GetAllPagedAsync(pageNumber, pageSize, search);
+            var result = await _tradeService.CreateTrade(dto);
+            return CreatedAtAction(nameof(GetTradeById), new { id = result.Data?.Id ?? 0 }, result);
+        }
+
+        [HttpPut("update-trade/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<TradeDetailDto>), 200)]
+        public async Task<IActionResult> UpdateTrade(long id, [FromBody] UpdateTradeDto dto)
+        {
+            var result = await _tradeService.UpdateTrade(id, dto);
+            if (!result.Success) return BadRequest(result);
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
+        [HttpDelete("delete-trade/{id}")]
+        public async Task<IActionResult> DeleteTrade(long id)
         {
-            await _tradeService.DeleteAsync(id);
+            var result = await _tradeService.DeleteTrade(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }

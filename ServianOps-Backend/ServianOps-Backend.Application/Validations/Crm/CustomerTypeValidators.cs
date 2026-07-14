@@ -1,5 +1,5 @@
 using FluentValidation;
-using ServianOps_Backend.Application.DTOs.Crm;
+using ServianOps_Backend.Application.CustomerTypeModule.CustomerType.CustomerTypeDto;
 
 namespace ServianOps_Backend.Application.Validations.Crm
 {
