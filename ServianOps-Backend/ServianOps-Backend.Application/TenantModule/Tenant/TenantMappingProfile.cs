@@ -15,6 +15,7 @@ namespace ServianOps_Backend.Application.TenantModule.Tenant
 
             CreateMap<CreateTenantDto, Core.Entities.Saas.Tenant>();
             CreateMap<UpdateTenantDto, Core.Entities.Saas.Tenant>();
+            CreateMap<CreateTenantDto, Core.Entities.Identity.User>();
         }
     }
 }
