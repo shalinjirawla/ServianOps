@@ -17,10 +17,10 @@ namespace ServianOps_Backend.Controllers
             _planService = planService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetPlans()
+        [HttpPost("search")]
+        public async Task<IActionResult> GetPlans([FromBody] ServianOps_Backend.Application.DTOs.Plan.PlanFilterDto filter)
         {
-            var plans = await _planService.GetPlansAsync();
+            var plans = await _planService.GetPlansAsync(filter);
             return Ok(plans);
         }
 

@@ -18,10 +18,10 @@ namespace ServianOps_Backend.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpPost("search")]
+        public async Task<IActionResult> GetAll([FromBody] ServianOps_Backend.Application.DTOs.Crm.SiteFilterDto filter)
         {
-            var result = await _service.GetAllPagedAsync(pageNumber, pageSize);
+            var result = await _service.GetAllPagedAsync(filter);
             return Ok(result);
         }
 

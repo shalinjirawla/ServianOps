@@ -22,16 +22,16 @@ namespace ServianOps_Backend.Controllers
             _currentTenant = currentTenant;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpPost("search")]
+        public async Task<IActionResult> GetUsers([FromBody] UserFilterDto filter)
         {
             if (User.IsInRole("SuperAdmin"))
             {
-                var admins = await _userService.GetAdministratorsPagedAsync(pageNumber, pageSize);
+                var admins = await _userService.GetAdministratorsPagedAsync(filter);
                 return Ok(admins);
             }
 
-            var users = await _userService.GetUsersPagedAsync(pageNumber, pageSize);
+            var users = await _userService.GetUsersPagedAsync(filter);
             return Ok(users);
         }
 

@@ -147,15 +147,30 @@ namespace ServianOps_Backend.Application.Services
             return tenantDto;
         }
 
-        public async Task<IReadOnlyList<TenantDto>> GetTenantsPagedAsync(int pageNumber, int pageSize)
+        public async Task<PagedResponseDto<TenantDto>> GetTenantsPagedAsync(TenantFilterDto filter)
         {
-            var tenants = await _tenantRepository.GetQueryable()
+            var query = _tenantRepository.GetQueryable()
                 .Include(t => t.Plan)
                 .Include(t => t.Users)
                     .ThenInclude(u => u.UserRoles)
                         .ThenInclude(ur => ur.Role)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(t => t.TenancyName.Contains(filter.Search) || t.CompanyName.Contains(filter.Search));
+            }
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(t => t.IsActive == filter.IsActive.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            
+            var tenants = await query
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
 
             var result = new List<TenantDto>();
@@ -169,7 +184,14 @@ namespace ServianOps_Backend.Application.Services
                     .ToList();
                 result.Add(dto);
             }
-            return result;
+            
+            return new PagedResponseDto<TenantDto>
+            {
+                Items = result,
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize
+            };
         }
 
         public async Task UpdateTenantAsync(long id, CreateTenantDto dto)

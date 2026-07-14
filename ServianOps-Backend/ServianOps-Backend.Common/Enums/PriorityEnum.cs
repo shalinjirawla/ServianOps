@@ -1,4 +1,4 @@
-namespace ServianOps_Backend.Core.Enums
+namespace ServianOps_Backend.Common.Enums
 {
     public enum PriorityEnum
     {

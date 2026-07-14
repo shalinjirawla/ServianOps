@@ -12,22 +12,19 @@ namespace ServianOps_Backend.Application.Services.Crm
     public class CustomerTypeService : ICustomerTypeService
     {
         private readonly ICustomerTypeRepository _repository;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public CustomerTypeService(ICustomerTypeRepository repository)
+        public CustomerTypeService(ICustomerTypeRepository repository, AutoMapper.IMapper mapper)
         {
             _repository = repository;
+            _mapper = mapper;
         }
 
         public async Task<CustomerTypeDto> CreateAsync(CreateCustomerTypeDto dto)
         {
-            var entity = new CustomerType
-            {
-                Name = dto.Name
-            };
-
+            var entity = _mapper.Map<CustomerType>(dto);
             await _repository.AddAsync(entity);
-
-            return MapToDto(entity);
+            return _mapper.Map<CustomerTypeDto>(entity);
         }
 
         public async Task<CustomerTypeDto> UpdateAsync(long id, UpdateCustomerTypeDto dto)
@@ -35,23 +32,44 @@ namespace ServianOps_Backend.Application.Services.Crm
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) throw new Exception("Customer Type not found.");
 
-            entity.Name = dto.Name;
-
+            _mapper.Map(dto, entity);
             await _repository.UpdateAsync(entity);
 
-            return MapToDto(entity);
+            return _mapper.Map<CustomerTypeDto>(entity);
         }
 
         public async Task<CustomerTypeDto> GetByIdAsync(long id)
         {
             var entity = await _repository.GetByIdAsync(id);
-            return entity == null ? null : MapToDto(entity);
+            return entity == null ? null : _mapper.Map<CustomerTypeDto>(entity);
         }
 
-        public async Task<IReadOnlyList<CustomerTypeDto>> GetAllPagedAsync(int pageNumber, int pageSize)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerTypeDto>> GetAllPagedAsync(CustomerTypeFilterDto filter)
         {
-            var entities = await _repository.GetPagedAsync(pageNumber, pageSize);
-            return entities.Select(MapToDto).ToList();
+            var query = _repository.GetQueryable();
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(c => c.IsActive == filter.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(c => c.Name.Contains(filter.Search));
+            }
+
+            var totalCount = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(query);
+            var items = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                query.Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize)
+            );
+
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerTypeDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<CustomerTypeDto>>(items)
+            };
         }
 
         public async Task DeleteAsync(long id)
@@ -61,17 +79,6 @@ namespace ServianOps_Backend.Application.Services.Crm
             {
                 await _repository.DeleteAsync(entity);
             }
-        }
-
-        private static CustomerTypeDto MapToDto(CustomerType entity)
-        {
-            return new CustomerTypeDto
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                CreationTime = entity.CreationTime,
-                IsActive = entity.IsActive
-            };
         }
     }
 }

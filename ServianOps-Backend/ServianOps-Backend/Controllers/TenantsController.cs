@@ -20,10 +20,10 @@ namespace ServianOps_Backend.Controllers
         }
 
         // Host endpoint to list all tenants
-        [HttpGet]
-        public async Task<IActionResult> GetTenants([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpPost("search")]
+        public async Task<IActionResult> GetTenants([FromBody] ServianOps_Backend.Application.DTOs.Tenant.TenantFilterDto filter)
         {
-            var tenants = await _tenantService.GetTenantsPagedAsync(pageNumber, pageSize);
+            var tenants = await _tenantService.GetTenantsPagedAsync(filter);
             return Ok(tenants);
         }
 

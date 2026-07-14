@@ -12,26 +12,19 @@ namespace ServianOps_Backend.Application.Services.Jobs
     public class TradeService : ITradeService
     {
         private readonly ITradeRepository _repository;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public TradeService(ITradeRepository repository)
+        public TradeService(ITradeRepository repository, AutoMapper.IMapper mapper)
         {
             _repository = repository;
+            _mapper = mapper;
         }
 
         public async Task<TradeDto> CreateAsync(CreateTradeDto dto)
         {
-            var trade = new Trade
-            {
-                Name = dto.Name
-            };
-
+            var trade = _mapper.Map<Trade>(dto);
             await _repository.AddAsync(trade);
-
-            return new TradeDto
-            {
-                Id = trade.Id,
-                Name = trade.Name
-            };
+            return _mapper.Map<TradeDto>(trade);
         }
 
         public async Task<TradeDto> UpdateAsync(long id, UpdateTradeDto dto)
@@ -39,50 +32,44 @@ namespace ServianOps_Backend.Application.Services.Jobs
             var trade = await _repository.GetByIdAsync(id);
             if (trade == null) throw new Exception("Trade not found.");
 
-            trade.Name = dto.Name;
-
+            _mapper.Map(dto, trade);
             await _repository.UpdateAsync(trade);
 
-            return new TradeDto
-            {
-                Id = trade.Id,
-                Name = trade.Name
-            };
+            return _mapper.Map<TradeDto>(trade);
         }
 
         public async Task<TradeDto> GetByIdAsync(long id)
         {
             var trade = await _repository.GetByIdAsync(id);
-            if (trade == null) return null;
-
-            return new TradeDto
-            {
-                Id = trade.Id,
-                Name = trade.Name
-            };
+            return trade == null ? null : _mapper.Map<TradeDto>(trade);
         }
 
-        public async Task<IReadOnlyList<TradeListDto>> GetAllPagedAsync(int pageNumber, int pageSize, string searchTerm)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<TradeListDto>> GetAllPagedAsync(TradeFilterDto filter)
         {
-            var query = await _repository.GetAllAsync();
+            var query = _repository.GetQueryable();
 
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            if (filter.IsActive.HasValue)
             {
-                query = query.Where(x => x.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+                query = query.Where(t => t.IsActive == filter.IsActive.Value);
             }
 
-            var paged = query
-                .OrderBy(x => x.Name)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(x => new TradeListDto
-                {
-                    Id = x.Id,
-                    Name = x.Name
-                })
-                .ToList();
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(t => t.Name.Contains(filter.Search));
+            }
 
-            return paged;
+            var totalCount = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(query);
+            var items = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                query.OrderBy(t => t.Name).Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize)
+            );
+
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<TradeListDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<TradeListDto>>(items)
+            };
         }
 
         public async Task DeleteAsync(long id)

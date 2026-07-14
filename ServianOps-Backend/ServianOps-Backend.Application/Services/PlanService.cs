@@ -4,64 +4,61 @@ using System.Threading.Tasks;
 using ServianOps_Backend.Application.DTOs.Plan;
 using ServianOps_Backend.Core.Entities.Saas;
 using ServianOps_Backend.Core.Interfaces.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace ServianOps_Backend.Application.Services
 {
     public class PlanService : Interfaces.IPlanService
     {
         private readonly IPlanRepository _planRepository;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public PlanService(IPlanRepository planRepository)
+        public PlanService(IPlanRepository planRepository, AutoMapper.IMapper mapper)
         {
             _planRepository = planRepository;
+            _mapper = mapper;
         }
 
         public async Task<PlanDto> GetPlanByIdAsync(long id)
         {
             var plan = await _planRepository.GetByIdAsync(id);
-            return plan == null ? null : MapToDto(plan);
+            return plan == null ? null : _mapper.Map<PlanDto>(plan);
         }
 
-        public async Task<IReadOnlyList<PlanDto>> GetPlansAsync()
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<PlanDto>> GetPlansAsync(PlanFilterDto filter)
         {
-            var plans = await _planRepository.GetAllAsync();
-            return plans.Select(MapToDto).ToList();
-        }
+            var query = _planRepository.GetQueryable();
 
-        private PlanDto MapToDto(Plan plan)
-        {
-            return new PlanDto
+            if (!string.IsNullOrWhiteSpace(filter.Search))
             {
-                Id = plan.Id,
-                PlanName = plan.PlanName,
-                MaxUsers = plan.MaxUsers,
-                MaxProjects = plan.MaxProjects,
-                MaxStorageGB = plan.MaxStorageGB,
-                Price = plan.Price,
-                BillingCycle = plan.BillingCycle,
-                IsTrialAvailable = plan.IsTrialAvailable,
-                TrialDays = plan.TrialDays,
-                IsActive = plan.IsActive
+                query = query.Where(p => p.PlanName.Contains(filter.Search));
+            }
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(p => p.IsActive == filter.IsActive.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<PlanDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<PlanDto>>(items)
             };
         }
 
         public async Task<PlanDto> CreatePlanAsync(CreatePlanDto dto)
         {
-            var plan = new Plan
-            {
-                PlanName = dto.PlanName,
-                MaxUsers = dto.MaxUsers,
-                MaxProjects = dto.MaxProjects,
-                MaxStorageGB = dto.MaxStorageGB,
-                Price = dto.Price,
-                BillingCycle = dto.BillingCycle,
-                IsTrialAvailable = dto.IsTrialAvailable,
-                TrialDays = dto.TrialDays,
-                IsActive = dto.IsActive
-            };
-
+            var plan = _mapper.Map<Plan>(dto);
             await _planRepository.AddAsync(plan);
-            return MapToDto(plan);
+            return _mapper.Map<PlanDto>(plan);
         }
 
         public async Task UpdatePlanAsync(long id, CreatePlanDto dto)
@@ -69,16 +66,7 @@ namespace ServianOps_Backend.Application.Services
             var plan = await _planRepository.GetByIdAsync(id);
             if (plan == null) throw new System.Exception("Plan not found");
 
-            plan.PlanName = dto.PlanName;
-            plan.MaxUsers = dto.MaxUsers;
-            plan.MaxProjects = dto.MaxProjects;
-            plan.MaxStorageGB = dto.MaxStorageGB;
-            plan.Price = dto.Price;
-            plan.BillingCycle = dto.BillingCycle;
-            plan.IsTrialAvailable = dto.IsTrialAvailable;
-            plan.TrialDays = dto.TrialDays;
-            plan.IsActive = dto.IsActive;
-
+            _mapper.Map(dto, plan);
             await _planRepository.UpdateAsync(plan);
         }
 

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
-using ServianOps_Backend.Core.Enums;
+using ServianOps_Backend.Common.Enums;
 using ServianOps_Backend.Application.DTOs.Base;
 using ServianOps_Backend.Application.DTOs.Shared;
 

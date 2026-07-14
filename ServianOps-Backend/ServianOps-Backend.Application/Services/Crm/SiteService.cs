@@ -26,17 +26,6 @@ namespace ServianOps_Backend.Application.Services.Crm
         public async Task<SiteDetailDto> CreateAsync(CreateSiteDto dto)
         {
             var site = _mapper.Map<Site>(dto);
-            site.SiteContacts = new List<SiteContact>
-            {
-                new SiteContact
-                {
-                    FirstName = dto.ContactFirstName,
-                    LastName = dto.ContactLastName,
-                    MobileNumber = dto.ContactMobile,
-                    Email = dto.ContactEmail,
-                    IsActive = true
-                }
-            };
 
             await _repository.AddAsync(site);
 
@@ -102,17 +91,41 @@ namespace ServianOps_Backend.Application.Services.Crm
             return site == null ? null : _mapper.Map<SiteDetailDto>(site);
         }
 
-        public async Task<IReadOnlyList<SiteListDto>> GetAllPagedAsync(int pageNumber, int pageSize)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<SiteListDto>> GetAllPagedAsync(SiteFilterDto filter)
         {
-            var sites = await _repository.GetQueryable()
+            var query = _repository.GetQueryable();
+
+            if (filter.IsActive.HasValue)
+            {
+                // Active filter if applicable
+            }
+
+            if (filter.CustomerId.HasValue)
+            {
+                query = query.Where(s => s.CustomerId == filter.CustomerId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(s => s.SiteName.Contains(filter.Search) || s.City.Contains(filter.Search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var sites = await query
                 .Include(s => s.Customer)
                 .Include(s => s.AccountManager)
                 .Include(s => s.SiteContacts)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
             
-            return _mapper.Map<List<SiteListDto>>(sites);
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<SiteListDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<SiteListDto>>(sites)
+            };
         }
 
         public async Task<IReadOnlyList<DropdownDto>> GetSitesByCustomerDropdownAsync(long customerId)

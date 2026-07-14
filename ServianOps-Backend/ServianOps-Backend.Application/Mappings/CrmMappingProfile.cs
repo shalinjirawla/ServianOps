@@ -24,7 +24,17 @@ namespace ServianOps_Backend.Application.Mappings
                 .ForMember(d => d.PrimaryContactMobile, opt => opt.MapFrom(s => s.CustomerContacts.FirstOrDefault(c => c.IsActive) != null ? s.CustomerContacts.FirstOrDefault(c => c.IsActive).MobileNumber : null));
 
             CreateMap<CreateCustomerDto, Customer>()
-                .ForMember(d => d.CustomerContacts, opt => opt.Ignore()); // Mapped manually in service
+                .ForMember(d => d.CustomerContacts, opt => opt.MapFrom(s => new System.Collections.Generic.List<CustomerContact> 
+                { 
+                    new CustomerContact 
+                    { 
+                        FirstName = s.ContactFirstName, 
+                        LastName = s.ContactLastName, 
+                        MobileNumber = s.ContactMobile, 
+                        Email = s.ContactEmail, 
+                        IsActive = true 
+                    } 
+                }));
 
             CreateMap<CustomerContact, CustomerContactDto>();
 
@@ -39,7 +49,17 @@ namespace ServianOps_Backend.Application.Mappings
                 .ForMember(d => d.PrimaryContactMobile, opt => opt.MapFrom(s => s.SiteContacts.FirstOrDefault(c => c.IsActive) != null ? s.SiteContacts.FirstOrDefault(c => c.IsActive).MobileNumber : null));
 
             CreateMap<CreateSiteDto, Site>()
-                .ForMember(d => d.SiteContacts, opt => opt.Ignore()); // Mapped manually in service
+                .ForMember(d => d.SiteContacts, opt => opt.MapFrom(s => new System.Collections.Generic.List<SiteContact> 
+                { 
+                    new SiteContact 
+                    { 
+                        FirstName = s.ContactFirstName, 
+                        LastName = s.ContactLastName, 
+                        MobileNumber = s.ContactMobile, 
+                        Email = s.ContactEmail, 
+                        IsActive = true 
+                    } 
+                }));
                 
             CreateMap<SiteContact, SiteContactDto>();
         }

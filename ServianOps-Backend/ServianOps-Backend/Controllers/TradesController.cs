@@ -40,10 +40,10 @@ namespace ServianOps_Backend.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null)
+        [HttpPost("search")]
+        public async Task<IActionResult> GetAll([FromBody] ServianOps_Backend.Application.DTOs.Jobs.TradeFilterDto filter)
         {
-            var result = await _tradeService.GetAllPagedAsync(pageNumber, pageSize, search);
+            var result = await _tradeService.GetAllPagedAsync(filter);
             return Ok(result);
         }
 

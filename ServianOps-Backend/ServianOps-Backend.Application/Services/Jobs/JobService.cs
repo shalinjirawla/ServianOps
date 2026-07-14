@@ -134,7 +134,7 @@ namespace ServianOps_Backend.Application.Services.Jobs
             return job == null ? null : _mapper.Map<JobDetailDto>(job);
         }
 
-        public async Task<IReadOnlyList<JobListDto>> GetAllPagedAsync(int pageNumber, int pageSize, string searchTerm)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<JobListDto>> GetAllPagedAsync(JobFilterDto filter)
         {
             var query = _jobRepository.GetQueryable()
                 .Include(j => j.Customer)
@@ -142,20 +142,39 @@ namespace ServianOps_Backend.Application.Services.Jobs
                 .Include(j => j.Trade)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            if (filter.CustomerId.HasValue)
+            {
+                query = query.Where(j => j.CustomerId == filter.CustomerId.Value);
+            }
+
+            if (filter.SiteId.HasValue)
+            {
+                query = query.Where(j => j.SiteId == filter.SiteId.Value);
+            }
+
+
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
             {
                 query = query.Where(x => 
-                    x.JobNumber.Contains(searchTerm) ||
-                    x.Description.Contains(searchTerm)
+                    x.JobNumber.Contains(filter.Search) ||
+                    x.Description.Contains(filter.Search)
                 );
             }
 
+            var totalCount = await query.CountAsync();
             var jobs = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
 
-            return _mapper.Map<List<JobListDto>>(jobs);
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<JobListDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<JobListDto>>(jobs)
+            };
         }
 
         public async Task DeleteAsync(long id)

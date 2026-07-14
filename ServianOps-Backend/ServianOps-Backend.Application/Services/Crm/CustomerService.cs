@@ -26,17 +26,6 @@ namespace ServianOps_Backend.Application.Services.Crm
         public async Task<CustomerDetailDto> CreateAsync(CreateCustomerDto dto)
         {
             var customer = _mapper.Map<Customer>(dto);
-            customer.CustomerContacts = new List<CustomerContact>
-            {
-                new CustomerContact
-                {
-                    FirstName = dto.ContactFirstName,
-                    LastName = dto.ContactLastName,
-                    MobileNumber = dto.ContactMobile,
-                    Email = dto.ContactEmail,
-                    IsActive = true
-                }
-            };
 
             await _repository.AddAsync(customer);
 
@@ -102,17 +91,41 @@ namespace ServianOps_Backend.Application.Services.Crm
             return customer == null ? null : _mapper.Map<CustomerDetailDto>(customer);
         }
 
-        public async Task<IReadOnlyList<CustomerListDto>> GetAllPagedAsync(int pageNumber, int pageSize)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerListDto>> GetAllPagedAsync(CustomerFilterDto filter)
         {
-            var customers = await _repository.GetQueryable()
+            var query = _repository.GetQueryable();
+
+            if (filter.IsActive.HasValue)
+            {
+                // Customer entity might not have IsActive directly, filtering is omitted or needs to be based on an existing property
+            }
+
+            if (filter.CustomerTypeId.HasValue)
+            {
+                query = query.Where(c => c.CustomerTypeId == filter.CustomerTypeId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(c => c.Name.Contains(filter.Search) || c.CompanyName.Contains(filter.Search) || c.AccountNumber.Contains(filter.Search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var customers = await query
                 .Include(c => c.CustomerType)
                 .Include(c => c.AccountManager)
                 .Include(c => c.CustomerContacts)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
             
-            return _mapper.Map<List<CustomerListDto>>(customers);
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerListDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<CustomerListDto>>(customers)
+            };
         }
 
         public async Task<IReadOnlyList<DropdownDto>> GetDropdownAsync()

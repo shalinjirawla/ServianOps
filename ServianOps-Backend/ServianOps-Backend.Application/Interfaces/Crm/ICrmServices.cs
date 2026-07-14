@@ -10,7 +10,7 @@ namespace ServianOps_Backend.Application.Interfaces.Crm
         Task<CustomerTypeDto> CreateAsync(CreateCustomerTypeDto dto);
         Task<CustomerTypeDto> UpdateAsync(long id, UpdateCustomerTypeDto dto);
         Task<CustomerTypeDto> GetByIdAsync(long id);
-        Task<IReadOnlyList<CustomerTypeDto>> GetAllPagedAsync(int pageNumber, int pageSize);
+        Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerTypeDto>> GetAllPagedAsync(CustomerTypeFilterDto filter);
         Task DeleteAsync(long id);
     }
 
@@ -19,7 +19,7 @@ namespace ServianOps_Backend.Application.Interfaces.Crm
         Task<CustomerDetailDto> CreateAsync(CreateCustomerDto dto);
         Task<CustomerDetailDto> UpdateAsync(long id, UpdateCustomerDto dto);
         Task<CustomerDetailDto> GetByIdAsync(long id);
-        Task<IReadOnlyList<CustomerListDto>> GetAllPagedAsync(int pageNumber, int pageSize);
+        Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<CustomerListDto>> GetAllPagedAsync(CustomerFilterDto filter);
         Task<IReadOnlyList<DropdownDto>> GetDropdownAsync();
         Task DeleteAsync(long id);
     }
@@ -29,7 +29,7 @@ namespace ServianOps_Backend.Application.Interfaces.Crm
         Task<SiteDetailDto> CreateAsync(CreateSiteDto dto);
         Task<SiteDetailDto> UpdateAsync(long id, UpdateSiteDto dto);
         Task<SiteDetailDto> GetByIdAsync(long id);
-        Task<IReadOnlyList<SiteListDto>> GetAllPagedAsync(int pageNumber, int pageSize);
+        Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<SiteListDto>> GetAllPagedAsync(SiteFilterDto filter);
         Task<IReadOnlyList<DropdownDto>> GetSitesByCustomerDropdownAsync(long customerId);
         Task DeleteAsync(long id);
     }

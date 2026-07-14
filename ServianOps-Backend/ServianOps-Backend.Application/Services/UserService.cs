@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using ServianOps_Backend.Application.DTOs.User;
 using ServianOps_Backend.Application.DTOs.Shared;
 using ServianOps_Backend.Core.Entities.Identity;
@@ -14,11 +15,13 @@ namespace ServianOps_Backend.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly AutoMapper.IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, IPasswordHasher passwordHasher)
+        public UserService(IUserRepository userRepository, IPasswordHasher passwordHasher, AutoMapper.IMapper mapper)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _mapper = mapper;
         }
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto, long? tenantId)
@@ -31,34 +34,29 @@ namespace ServianOps_Backend.Application.Services
 
             var hash = _passwordHasher.HashPassword(dto.Password, out var salt);
 
-            var user = new User
-            {
-                TenantId = tenantId,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Email = dto.Email,
-                Phone = dto.Phone ?? string.Empty,
-                ProfileImage = string.Empty,
-                PasswordHash = hash,
-                PasswordSalt = salt,
-                IsActive = true
-            };
+            var user = _mapper.Map<User>(dto);
+            user.TenantId = tenantId;
+            user.PasswordHash = hash;
+            user.PasswordSalt = salt;
+            user.IsActive = true;
+            user.ProfileImage = string.Empty;
 
             await _userRepository.AddAsync(user);
 
-            return MapToDto(user);
+            var createdUser = await _userRepository.GetQueryable().Include(u => u.Tenant).FirstOrDefaultAsync(u => u.Id == user.Id);
+            return _mapper.Map<UserDto>(createdUser);
         }
 
         public async Task<UserDto> GetUserByEmailAsync(string email)
         {
-            var user = await _userRepository.GetByEmailAsync(email);
-            return user == null ? null : MapToDto(user);
+            var user = await _userRepository.GetQueryable().Include(u => u.Tenant).FirstOrDefaultAsync(u => u.Email == email);
+            return user == null ? null : _mapper.Map<UserDto>(user);
         }
 
         public async Task<UserDto> GetUserByEmailAndTenantIdAsync(string email, long? tenantId)
         {
-            var user = await _userRepository.GetByEmailAndTenantIdAsync(email, tenantId);
-            return user == null ? null : MapToDto(user);
+            var user = await _userRepository.GetQueryable().Include(u => u.Tenant).FirstOrDefaultAsync(u => u.Email == email && u.TenantId == tenantId);
+            return user == null ? null : _mapper.Map<UserDto>(user);
         }
 
         public async Task<bool> ValidateCredentialsAsync(string email, string password, long? tenantId)
@@ -71,8 +69,8 @@ namespace ServianOps_Backend.Application.Services
 
         public async Task<UserDto> GetUserByIdAsync(long id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            return user == null ? null : MapToDto(user);
+            var user = await _userRepository.GetQueryable().Include(u => u.Tenant).FirstOrDefaultAsync(u => u.Id == id);
+            return user == null ? null : _mapper.Map<UserDto>(user);
         }
 
         public async Task<string> GetUserRoleNameAsync(long userId)
@@ -80,22 +78,76 @@ namespace ServianOps_Backend.Application.Services
             return await _userRepository.GetUserRoleNameAsync(userId);
         }
 
-        public async Task<IReadOnlyList<UserDto>> GetUsersPagedAsync(int pageNumber, int pageSize)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<UserDto>> GetUsersPagedAsync(UserFilterDto filter)
         {
-            var users = await _userRepository.GetPagedAsync(pageNumber, pageSize);
-            return users.Select(MapToDto).ToList();
+            var query = _userRepository.GetQueryable();
+
+            if (filter.TenantId.HasValue)
+            {
+                query = query.Where(u => u.TenantId == filter.TenantId.Value);
+            }
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(u => u.IsActive == filter.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(u => u.FirstName.Contains(filter.Search) || u.LastName.Contains(filter.Search) || u.Email.Contains(filter.Search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Include(u => u.Tenant)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<UserDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<UserDto>>(items)
+            };
         }
 
-        public async Task<IReadOnlyList<UserDto>> GetAdministratorsPagedAsync(int pageNumber, int pageSize)
+        public async Task<ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<UserDto>> GetAdministratorsPagedAsync(UserFilterDto filter)
         {
-            var users = await _userRepository.GetAdministratorsPagedAsync(pageNumber, pageSize);
-            return users.Select(MapToDto).ToList();
+            var query = _userRepository.GetQueryable()
+                .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "Administrator"));
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(u => u.IsActive == filter.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                query = query.Where(u => u.FirstName.Contains(filter.Search) || u.LastName.Contains(filter.Search) || u.Email.Contains(filter.Search));
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Include(u => u.Tenant)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            return new ServianOps_Backend.Application.DTOs.Shared.PagedResponseDto<UserDto>
+            {
+                TotalCount = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Items = _mapper.Map<List<UserDto>>(items)
+            };
         }
 
         public async Task<IReadOnlyList<UserDto>> GetTenantAdministratorsAsync(long tenantId)
         {
             var users = await _userRepository.GetTenantAdministratorsAsync(tenantId);
-            return users.Select(MapToDto).ToList();
+            return _mapper.Map<List<UserDto>>(users);
         }
 
         public async Task UpdateUserAsync(long id, CreateUserDto dto)
@@ -103,11 +155,7 @@ namespace ServianOps_Backend.Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null) throw new Exception("User not found");
 
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
-            user.Phone = dto.Phone;
-            // Handle email update + duplicate check here if required, skipped for brevity
-
+            _mapper.Map(dto, user);
             await _userRepository.UpdateAsync(user);
         }
 
@@ -116,7 +164,7 @@ namespace ServianOps_Backend.Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user != null)
             {
-                await _userRepository.DeleteAsync(user); // Triggers soft delete in SaveChangesAsync
+                await _userRepository.DeleteAsync(user);
             }
         }
 
@@ -128,29 +176,6 @@ namespace ServianOps_Backend.Application.Services
                 user.IsActive = !user.IsActive;
                 await _userRepository.UpdateAsync(user);
             }
-        }
-
-        private UserDto MapToDto(User user)
-        {
-            return new UserDto
-            {
-                Id = user.Id,
-                TenantId = user.TenantId,
-                Tenant = user.Tenant != null ? new TenantSummaryDto 
-                {
-                    Id = user.Tenant.Id,
-                    CompanyName = user.Tenant.CompanyName,
-                    TenancyName = user.Tenant.TenancyName
-                } : null,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                Phone = user.Phone,
-                ProfileImage = user.ProfileImage,
-                LastLogin = user.LastLogin,
-                IsEmailVerified = user.IsEmailVerified,
-                IsActive = user.IsActive
-            };
         }
     }
 }
