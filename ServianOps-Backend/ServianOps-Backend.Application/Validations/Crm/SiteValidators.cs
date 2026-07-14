@@ -1,5 +1,5 @@
+using ServianOps_Backend.Application.SiteModule.Site.SiteDto;
 using FluentValidation;
-using ServianOps_Backend.Application.DTOs.Crm;
 
 namespace ServianOps_Backend.Application.Validations.Crm
 {

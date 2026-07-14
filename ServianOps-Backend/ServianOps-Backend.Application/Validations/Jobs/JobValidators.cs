@@ -2,7 +2,7 @@ using System.IO;
 using System.Linq;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
-using ServianOps_Backend.Application.DTOs.Jobs;
+using ServianOps_Backend.Application.JobModule.Job.JobDto;
 
 namespace ServianOps_Backend.Application.Validations.Jobs
 {

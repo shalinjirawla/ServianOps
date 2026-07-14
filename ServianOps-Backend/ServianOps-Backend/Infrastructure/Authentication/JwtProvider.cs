@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using ServianOps_Backend.Application.DTOs.User;
+using ServianOps_Backend.Application.UserModule.User.UserDto;
 using ServianOps_Backend.Application.Interfaces;
 
 namespace ServianOps_Backend.Infrastructure.Authentication
@@ -19,7 +19,7 @@ namespace ServianOps_Backend.Infrastructure.Authentication
             _jwtSettings = jwtSettingsOptions.Value;
         }
 
-        public string GenerateToken(UserDto user, string roleName)
+        public string GenerateToken(UserDetailDto user, string roleName)
         {
             var claims = new List<Claim>
             {

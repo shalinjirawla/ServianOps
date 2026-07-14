@@ -1,5 +1,5 @@
+using ServianOps_Backend.Application.TradeModule.Trade.TradeDto;
 using FluentValidation;
-using ServianOps_Backend.Application.DTOs.Jobs;
 
 namespace ServianOps_Backend.Application.Validations.Jobs
 {

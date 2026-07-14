@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Crm;
-using ServianOps_Backend.Application.Interfaces.Crm;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.CustomerModule.Customer;
+using ServianOps_Backend.Application.CustomerModule.Customer.CustomerDto;
 
 namespace ServianOps_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/customer")]
     [Authorize]
     public class CustomersController : ControllerBase
     {
@@ -18,53 +19,53 @@ namespace ServianOps_Backend.Controllers
             _service = service;
         }
 
-        [HttpPost("search")]
-        public async Task<IActionResult> GetAll([FromBody] ServianOps_Backend.Application.DTOs.Crm.CustomerFilterDto filter)
+        [HttpGet("get-all-customers")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<CustomerListDto>>), 200)]
+        public async Task<IActionResult> GetAllCustomers([FromQuery] CustomerFilterDto filter)
         {
-            var result = await _service.GetAllPagedAsync(filter);
+            var result = await _service.GetAllCustomers(filter);
             return Ok(result);
         }
 
-        [HttpGet("dropdown")]
-        public async Task<IActionResult> GetDropdown()
+        [HttpGet("get-customer-lookup")]
+        [ProducesResponseType(typeof(StandardResponse<System.Collections.Generic.IReadOnlyList<CustomerLookupDto>>), 200)]
+        public async Task<IActionResult> GetCustomerLookup()
         {
-            var result = await _service.GetDropdownAsync();
+            var result = await _service.GetCustomerLookup();
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(long id)
+        [HttpGet("get-customer-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerDetailDto>), 200)]
+        public async Task<IActionResult> GetCustomerById(long id)
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null) return NotFound();
+            var result = await _service.GetCustomerById(id);
+            if (!result.Success) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpGet("{id}/sites")]
-        public async Task<IActionResult> GetSites(long id, [FromServices] ISiteService siteService)
+        [HttpPost("create-customer")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerDetailDto>), 201)]
+        public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto dto)
         {
-            var result = await siteService.GetSitesByCustomerDropdownAsync(id);
+            var result = await _service.CreateCustomer(dto);
+            return CreatedAtAction(nameof(GetCustomerById), new { id = result.Data?.Id ?? 0 }, result);
+        }
+
+        [HttpPut("update-customer/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerDetailDto>), 200)]
+        public async Task<IActionResult> UpdateCustomer(long id, [FromBody] UpdateCustomerDto dto)
+        {
+            var result = await _service.UpdateCustomer(id, dto);
+            if (!result.Success) return BadRequest(result);
             return Ok(result);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateCustomerDto dto)
+        [HttpDelete("delete-customer/{id}")]
+        public async Task<IActionResult> DeleteCustomer(long id)
         {
-            var result = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] UpdateCustomerDto dto)
-        {
-            var result = await _service.UpdateAsync(id, dto);
-            return Ok(result);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
-        {
-            await _service.DeleteAsync(id);
+            var result = await _service.DeleteCustomer(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }

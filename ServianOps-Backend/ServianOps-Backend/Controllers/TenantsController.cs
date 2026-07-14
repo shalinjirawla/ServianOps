@@ -1,77 +1,80 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.Interfaces;
-using ServianOps_Backend.Core.Interfaces;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.TenantModule.Tenant;
+using ServianOps_Backend.Application.TenantModule.Tenant.TenantDto;
+
 namespace ServianOps_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/tenant")]
     [Authorize]
     public class TenantsController : ControllerBase
     {
-        private readonly ITenantService _tenantService;
-        private readonly ICurrentTenant _currentTenant;
+        private readonly ITenantService _service;
 
-        public TenantsController(ITenantService tenantService, ICurrentTenant currentTenant)
+        public TenantsController(ITenantService service)
         {
-            _tenantService = tenantService;
-            _currentTenant = currentTenant;
+            _service = service;
         }
 
-        // Host endpoint to list all tenants
-        [HttpPost("search")]
-        public async Task<IActionResult> GetTenants([FromBody] ServianOps_Backend.Application.DTOs.Tenant.TenantFilterDto filter)
+        [HttpGet("get-all-tenants")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<TenantListDto>>), 200)]
+        public async Task<IActionResult> GetAllTenants([FromQuery] TenantFilterDto filter)
         {
-            var tenants = await _tenantService.GetTenantsPagedAsync(filter);
-            return Ok(tenants);
+            var result = await _service.GetAllTenants(filter);
+            return Ok(result);
         }
 
-        // Endpoint for the current tenant to view their own info
-        [HttpGet("me")]
-        public async Task<IActionResult> GetCurrentTenant()
+        [HttpGet("get-tenant-lookup")]
+        [ProducesResponseType(typeof(StandardResponse<System.Collections.Generic.IReadOnlyList<TenantLookupDto>>), 200)]
+        public async Task<IActionResult> GetTenantLookup()
         {
-            // Note: Normally we'd get Tenant by ID using a GetTenantByIdAsync method, but for demo:// Since we don't have GetTenantByIdAsync on the interface right now, we can fetch all and filter // OR ideally add it to the ITenantService. // In a real scenario, this would use a proper GetById.// For now just returning the
-             return Ok(new { CurrentTenantId = _currentTenant.TenantId });
+            var result = await _service.GetTenantLookup();
+            return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("get-tenant-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<TenantDetailDto>), 200)]
         public async Task<IActionResult> GetTenantById(long id)
         {
-            var tenant = await _tenantService.GetTenantByIdAsync(id);
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-            return Ok(tenant);
+            var result = await _service.GetTenantById(id);
+            if (!result.Success) return NotFound(result);
+            return Ok(result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTenant(long id, [FromBody] ServianOps_Backend.Application.DTOs.Tenant.CreateTenantDto dto)
+        [HttpPost("create-tenant")]
+        [ProducesResponseType(typeof(StandardResponse<TenantDetailDto>), 201)]
+        public async Task<IActionResult> CreateTenant([FromBody] CreateTenantDto dto)
         {
-            try
-            {
-                await _tenantService.UpdateTenantAsync(id, dto);
-                return NoContent();
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+            var result = await _service.CreateTenant(dto);
+            return CreatedAtAction(nameof(GetTenantById), new { id = result.Data?.Id ?? 0 }, result);
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("update-tenant/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<TenantDetailDto>), 200)]
+        public async Task<IActionResult> UpdateTenant(long id, [FromBody] UpdateTenantDto dto)
+        {
+            var result = await _service.UpdateTenant(id, dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpDelete("delete-tenant/{id}")]
         public async Task<IActionResult> DeleteTenant(long id)
         {
-            try
-            {
-                await _tenantService.DeleteTenantAsync(id);
-                return NoContent();
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+            var result = await _service.DeleteTenant(id);
+            if (!result.Success) return BadRequest(result);
+            return NoContent();
+        }
+        
+        [HttpPost("setup-default")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SetupDefaultTenant()
+        {
+            var result = await _service.SetupDefaultTenant();
+            return Ok(result);
         }
     }
 }

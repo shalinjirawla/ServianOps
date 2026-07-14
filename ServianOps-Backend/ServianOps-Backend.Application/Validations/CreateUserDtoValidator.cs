@@ -1,5 +1,5 @@
 using FluentValidation;
-using ServianOps_Backend.Application.DTOs.User;
+using ServianOps_Backend.Application.UserModule.User.UserDto;
 
 namespace ServianOps_Backend.Application.Validations
 {
