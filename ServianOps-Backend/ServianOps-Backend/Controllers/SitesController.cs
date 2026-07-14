@@ -1,56 +1,72 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Crm;
-using ServianOps_Backend.Application.Interfaces.Crm;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.SiteModule.Site;
+using ServianOps_Backend.Application.SiteModule.Site.SiteDto;
 
 namespace ServianOps_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/site")]
     [Authorize]
     public class SitesController : ControllerBase
     {
-        private readonly ISiteService _service;
+        private readonly ISiteService _siteService;
 
-        public SitesController(ISiteService service)
+        public SitesController(ISiteService siteService)
         {
-            _service = service;
+            _siteService = siteService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("get-all-sites")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<SiteListDto>>), 200)]
+        public async Task<IActionResult> GetAllSites([FromQuery] SiteFilterDto filter)
         {
-            var result = await _service.GetAllPagedAsync(pageNumber, pageSize);
+            var result = await _siteService.GetAllSites(filter);
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(long id)
+        [HttpGet("get-site-lookup")]
+        [ProducesResponseType(typeof(StandardResponse<IReadOnlyList<SiteLookupDto>>), 200)]
+        public async Task<IActionResult> GetSiteLookup([FromQuery] long? customerId)
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null) return NotFound();
+            var result = await _siteService.GetSiteLookup(customerId);
             return Ok(result);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateSiteDto dto)
+        [HttpGet("get-site-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<SiteDetailDto>), 200)]
+        public async Task<IActionResult> GetSiteById(long id)
         {
-            var result = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] UpdateSiteDto dto)
-        {
-            var result = await _service.UpdateAsync(id, dto);
+            var result = await _siteService.GetSiteById(id);
+            if (!result.Success) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
+        [HttpPost("create-site")]
+        [ProducesResponseType(typeof(StandardResponse<SiteDetailDto>), 201)]
+        public async Task<IActionResult> CreateSite([FromBody] CreateSiteDto dto)
         {
-            await _service.DeleteAsync(id);
+            var result = await _siteService.CreateSite(dto);
+            return CreatedAtAction(nameof(GetSiteById), new { id = result.Data?.Id ?? 0 }, result);
+        }
+
+        [HttpPut("update-site/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<SiteDetailDto>), 200)]
+        public async Task<IActionResult> UpdateSite(long id, [FromBody] UpdateSiteDto dto)
+        {
+            var result = await _siteService.UpdateSite(id, dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpDelete("delete-site/{id}")]
+        public async Task<IActionResult> DeleteSite(long id)
+        {
+            var result = await _siteService.DeleteSite(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }

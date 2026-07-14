@@ -2,9 +2,12 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Auth;
-using ServianOps_Backend.Application.DTOs.Tenant;
+using ServianOps_Backend.Application.TenantModule.Tenant;
+using ServianOps_Backend.Application.TenantModule.Tenant.TenantDto;
 using ServianOps_Backend.Application.Interfaces;
+using ServianOps_Backend.Application.AuthModule.Auth.AuthDto;
+using ServianOps_Backend.Application.UserModule.User;
+using ServianOps_Backend.Application.Common.DTOs;
 
 namespace ServianOps_Backend.Controllers
 {
@@ -25,21 +28,24 @@ namespace ServianOps_Backend.Controllers
 
         [HttpPost("register-tenant")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(StandardResponse<long>), 200)]
         public async Task<IActionResult> RegisterTenant([FromBody] CreateTenantDto dto)
         {
             try
             {
-                var tenant = await _tenantService.CreateTenantAsync(dto);
-                return Ok(new { message = "Tenant registered successfully.", tenantId = tenant.Id });
+                var tenantResult = await _tenantService.CreateTenant(dto);
+                if (!tenantResult.Success) return Ok(StandardResponse<long>.Error(tenantResult.Message));
+                return Ok(StandardResponse<long>.Ok(tenantResult.Data.Id, "Tenant registered successfully."));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { error = ex.Message });
+                return Ok(StandardResponse<long>.Error(ex.Message));
             }
         }
 
         [HttpPost("login")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(StandardResponse<AuthResponseDto>), 200)]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             long? tenantId = null;
@@ -47,23 +53,24 @@ namespace ServianOps_Backend.Controllers
             // 1. Resolve Tenant if TenancyName is provided
             if (!string.IsNullOrWhiteSpace(dto.TenancyName))
             {
-                var tenant = await _tenantService.GetByTenancyNameAsync(dto.TenancyName);
-                if (tenant == null)
+                var tenantResult = await _tenantService.GetByTenancyName(dto.TenancyName);
+                if (!tenantResult.Success || tenantResult.Data == null)
                 {
-                    return Unauthorized(new { error = "Invalid Company Code." });
+                    return Ok(StandardResponse<AuthResponseDto>.Error("Invalid Company Code."));
                 }
-                tenantId = tenant.Id;
+                tenantId = tenantResult.Data.Id;
             }
 
             // 2. Validate Credentials
-            var isValid = await _userService.ValidateCredentialsAsync(dto.Email, dto.Password, tenantId);
-            if (!isValid)
+            var validationResult = await _userService.ValidateCredentials(dto.Email, dto.Password, tenantId);
+            if (!validationResult.Success || !validationResult.Data)
             {
-                return Unauthorized(new { error = "Invalid Email or Password." });
+                return Ok(StandardResponse<AuthResponseDto>.Error("Invalid Email or Password."));
             }
 
             // 3. Generate Token
-            var user = await _userService.GetUserByEmailAndTenantIdAsync(dto.Email, tenantId);
+            var userResult = await _userService.GetUserByEmailAndTenantId(dto.Email, tenantId);
+            var user = userResult.Data;
             
             // 4. Fetch Role
             var role = "User"; 
@@ -73,48 +80,52 @@ namespace ServianOps_Backend.Controllers
             }
             else 
             {
-                 var fetchedRole = await _userService.GetUserRoleNameAsync(user.Id);
-                 if (!string.IsNullOrEmpty(fetchedRole))
+                 var fetchedRoleResult = await _userService.GetUserRoleName(user.Id);
+                 if (fetchedRoleResult.Success && !string.IsNullOrEmpty(fetchedRoleResult.Data))
                  {
-                     role = fetchedRole;
+                     role = fetchedRoleResult.Data;
                  }
             }
 
             var token = _jwtProvider.GenerateToken(user, role);
 
-            return Ok(new AuthResponseDto
+            var authResponse = new AuthResponseDto
             {
                 Token = token,
                 UserId = user.Id,
                 TenantId = tenantId,
                 Email = user.Email,
                 Role = role
-            });
+            };
+            return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse));
         }
 
         [HttpPost("logout")]
         [Authorize]
+        [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public IActionResult Logout()
         {
             // For pure JWT, logout is handled client-side by destroying the token.
             // If tracking refresh tokens, we would invalidate it in DB here.
-            return Ok(new { message = "Logged out successfully." });
+            return Ok(StandardResponse<bool>.Ok(true, "Logged out successfully."));
         }
 
         [HttpPost("forgot-password")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public IActionResult ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             // Placeholder for email sending logic
-            return Ok(new { message = "If the email and company code match, a reset link will be sent." });
+            return Ok(StandardResponse<bool>.Ok(true, "If the email and company code match, a reset link will be sent."));
         }
 
         [HttpPost("reset-password")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public IActionResult ResetPassword([FromBody] ResetPasswordDto dto)
         {
             // Placeholder for password reset logic
-            return Ok(new { message = "Password reset functionality is under construction." });
+            return Ok(StandardResponse<bool>.Ok(false, "Password reset functionality is under construction."));
         }
     }
 }

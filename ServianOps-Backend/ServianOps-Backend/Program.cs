@@ -6,16 +6,8 @@ using ServianOps_Backend.Application.Interfaces;
 using ServianOps_Backend.Application.Services;
 using ServianOps_Backend.Core.Interfaces;
 using ServianOps_Backend.Core.Interfaces.Repositories;
-using ServianOps_Backend.Core.Interfaces.Repositories.Crm;
 using ServianOps_Backend.EntityFramework.Contexts;
 using ServianOps_Backend.EntityFramework.Repositories;
-using ServianOps_Backend.EntityFramework.Repositories.Crm;
-using ServianOps_Backend.Application.Interfaces.Crm;
-using ServianOps_Backend.Application.Services.Crm;
-using ServianOps_Backend.Core.Interfaces.Repositories.Jobs;
-using ServianOps_Backend.EntityFramework.Repositories.Jobs;
-using ServianOps_Backend.Application.Interfaces.Jobs;
-using ServianOps_Backend.Application.Services.Jobs;
 using ServianOps_Backend.Infrastructure.Authentication;
 using ServianOps_Backend.Infrastructure.Multitenancy;
 using FluentValidation;
@@ -30,13 +22,7 @@ builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 // Register all validators from the Application assembly
 builder.Services.AddValidatorsFromAssemblyContaining<ServianOps_Backend.Application.Validations.LoginDtoValidator>();
-builder.Services.AddAutoMapper(cfg => 
-{
-    cfg.AddProfile<ServianOps_Backend.Application.Mappings.IdentityMappingProfile>();
-    cfg.AddProfile<ServianOps_Backend.Application.Mappings.SaasMappingProfile>();
-    cfg.AddProfile<ServianOps_Backend.Application.Mappings.JobMappingProfile>();
-    cfg.AddProfile<ServianOps_Backend.Application.Mappings.CrmMappingProfile>();
-});
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(ServianOps_Backend.Application.Common.DTOs.PagedRequestDto).Assembly));
 builder.Services.AddEndpointsApiExplorer();
 
 //Enable CORS
@@ -49,6 +35,9 @@ builder.Services.AddCors(c =>
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "ServianOps API", Version = "v1" });
+    
+    // Use Action as the operationId to allow NSwag to generate clean method names.
+    c.CustomOperationIds(e => e.ActionDescriptor.RouteValues["action"]);
     
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -110,37 +99,26 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 // Repositories
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddScoped<IPlanRepository, PlanRepository>();
-builder.Services.AddScoped<ITenantRepository, TenantRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
-// Crm Repositories
-builder.Services.AddScoped<ICustomerTypeRepository, CustomerTypeRepository>();
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<ICustomerContactRepository, CustomerContactRepository>();
-builder.Services.AddScoped<ISiteRepository, SiteRepository>();
-builder.Services.AddScoped<ISiteContactRepository, SiteContactRepository>();
 
-// Jobs Repositories
-builder.Services.AddScoped<ITradeRepository, TradeRepository>();
-builder.Services.AddScoped<IJobRepository, JobRepository>();
-builder.Services.AddScoped<IJobAttachmentRepository, JobAttachmentRepository>();
+
+
+
 
 // Services
-builder.Services.AddScoped<IPlanService, PlanService>();
-builder.Services.AddScoped<ITenantService, TenantService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.PlanModule.Plan.IPlanService, ServianOps_Backend.Application.PlanModule.Plan.PlanService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.TenantModule.Tenant.ITenantService, ServianOps_Backend.Application.TenantModule.Tenant.TenantService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.UserModule.User.IUserService, ServianOps_Backend.Application.UserModule.User.UserService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.RoleModule.Role.IRoleService, ServianOps_Backend.Application.RoleModule.Role.RoleService>();
 
 // Crm Services
-builder.Services.AddScoped<ICustomerTypeService, CustomerTypeService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<ISiteService, SiteService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.CustomerTypeModule.CustomerType.ICustomerTypeService, ServianOps_Backend.Application.CustomerTypeModule.CustomerType.CustomerTypeService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.CustomerModule.Customer.ICustomerService, ServianOps_Backend.Application.CustomerModule.Customer.CustomerService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.SiteModule.Site.ISiteService, ServianOps_Backend.Application.SiteModule.Site.SiteService>();
 
 // Jobs Services
-builder.Services.AddScoped<ITradeService, TradeService>();
-builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.TradeModule.Trade.ITradeService, ServianOps_Backend.Application.TradeModule.Trade.TradeService>();
+builder.Services.AddScoped<ServianOps_Backend.Application.JobModule.Job.IJobService, ServianOps_Backend.Application.JobModule.Job.JobService>();
 
 
 

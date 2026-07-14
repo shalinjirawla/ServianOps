@@ -1,14 +1,15 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Jobs;
-using ServianOps_Backend.Application.Interfaces.Jobs;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.JobModule.Job;
+using ServianOps_Backend.Application.JobModule.Job.JobDto;
 
 namespace ServianOps_Backend.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/job")]
+    [Authorize]
     public class JobsController : ControllerBase
     {
         private readonly IJobService _jobService;
@@ -18,46 +19,53 @@ namespace ServianOps_Backend.Controllers
             _jobService = jobService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] CreateJobDto dto)
+        [HttpGet("get-all-jobs")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<JobListDto>>), 200)]
+        public async Task<IActionResult> GetAllJobs([FromQuery] JobFilterDto filter)
         {
-            var result = await _jobService.CreateAsync(dto);
+            var result = await _jobService.GetAllJobs(filter);
             return Ok(result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromForm] UpdateJobDto dto)
+        [HttpGet("get-job-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<JobDetailDto>), 200)]
+        public async Task<IActionResult> GetJobById(long id)
         {
-            var result = await _jobService.UpdateAsync(id, dto);
+            var result = await _jobService.GetJobById(id);
+            if (!result.Success) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(long id)
+        [HttpPost("create-job")]
+        [ProducesResponseType(typeof(StandardResponse<JobDetailDto>), 201)]
+        public async Task<IActionResult> CreateJob([FromForm] CreateJobDto dto)
         {
-            var result = await _jobService.GetByIdAsync(id);
-            if (result == null) return NotFound();
+            var result = await _jobService.CreateJob(dto);
+            return CreatedAtAction(nameof(GetJobById), new { id = result.Data?.Id ?? 0 }, result);
+        }
+
+        [HttpPut("update-job/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<JobDetailDto>), 200)]
+        public async Task<IActionResult> UpdateJob(long id, [FromForm] UpdateJobDto dto)
+        {
+            var result = await _jobService.UpdateJob(id, dto);
+            if (!result.Success) return BadRequest(result);
             return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null)
+        [HttpDelete("delete-job/{id}")]
+        public async Task<IActionResult> DeleteJob(long id)
         {
-            var result = await _jobService.GetAllPagedAsync(pageNumber, pageSize, search);
-            return Ok(result);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
-        {
-            await _jobService.DeleteAsync(id);
+            var result = await _jobService.DeleteJob(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
 
-        [HttpDelete("{jobId}/attachments/{attachmentId}")]
-        public async Task<IActionResult> DeleteAttachment(long jobId, long attachmentId)
+        [HttpDelete("delete-attachment/{id}/{attachmentId}")]
+        public async Task<IActionResult> DeleteAttachment(long id, long attachmentId)
         {
-            await _jobService.DeleteAttachmentAsync(jobId, attachmentId);
+            var result = await _jobService.DeleteAttachment(id, attachmentId);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }

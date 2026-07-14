@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using ServianOps_Backend.Core.Entities.Base;
 using ServianOps_Backend.Core.Entities.Crm;
-using ServianOps_Backend.Core.Enums;
+using ServianOps_Backend.Common.Enums;
 
 namespace ServianOps_Backend.Core.Entities.Jobs
 {

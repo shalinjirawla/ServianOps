@@ -1,5 +1,5 @@
 using FluentValidation;
-using ServianOps_Backend.Application.DTOs.Tenant;
+using ServianOps_Backend.Application.TenantModule.Tenant.TenantDto;
 
 namespace ServianOps_Backend.Application.Validations
 {

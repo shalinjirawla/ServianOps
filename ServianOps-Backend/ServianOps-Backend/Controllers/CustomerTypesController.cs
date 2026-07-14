@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.Crm;
-using ServianOps_Backend.Application.Interfaces.Crm;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.CustomerTypeModule.CustomerType;
+using ServianOps_Backend.Application.CustomerTypeModule.CustomerType.CustomerTypeDto;
 
 namespace ServianOps_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/customer-type")]
     [Authorize]
     public class CustomerTypesController : ControllerBase
     {
@@ -18,39 +19,53 @@ namespace ServianOps_Backend.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("get-all-customer-types")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<CustomerTypeListDto>>), 200)]
+        public async Task<IActionResult> GetAllCustomerTypes([FromQuery] CustomerTypeFilterDto filter)
         {
-            var result = await _service.GetAllPagedAsync(pageNumber, pageSize);
+            var result = await _service.GetAllCustomerTypes(filter);
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(long id)
+        [HttpGet("get-customer-type-lookup")]
+        [ProducesResponseType(typeof(StandardResponse<System.Collections.Generic.IReadOnlyList<CustomerTypeLookupDto>>), 200)]
+        public async Task<IActionResult> GetCustomerTypeLookup()
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null) return NotFound();
+            var result = await _service.GetCustomerTypeLookup();
             return Ok(result);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateCustomerTypeDto dto)
+        [HttpGet("get-customer-type-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerTypeDetailDto>), 200)]
+        public async Task<IActionResult> GetCustomerTypeById(long id)
         {
-            var result = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] UpdateCustomerTypeDto dto)
-        {
-            var result = await _service.UpdateAsync(id, dto);
+            var result = await _service.GetCustomerTypeById(id);
+            if (!result.Success) return NotFound(result);
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
+        [HttpPost("create-customer-type")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerTypeDetailDto>), 201)]
+        public async Task<IActionResult> CreateCustomerType([FromBody] CreateCustomerTypeDto dto)
         {
-            await _service.DeleteAsync(id);
+            var result = await _service.CreateCustomerType(dto);
+            return CreatedAtAction(nameof(GetCustomerTypeById), new { id = result.Data?.Id ?? 0 }, result);
+        }
+
+        [HttpPut("update-customer-type/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<CustomerTypeDetailDto>), 200)]
+        public async Task<IActionResult> UpdateCustomerType(long id, [FromBody] UpdateCustomerTypeDto dto)
+        {
+            var result = await _service.UpdateCustomerType(id, dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpDelete("delete-customer-type/{id}")]
+        public async Task<IActionResult> DeleteCustomerType(long id)
+        {
+            var result = await _service.DeleteCustomerType(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }

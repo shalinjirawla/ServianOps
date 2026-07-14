@@ -1,90 +1,89 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServianOps_Backend.Application.DTOs.User;
-using ServianOps_Backend.Application.Interfaces;
-using ServianOps_Backend.Core.Interfaces;
+using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Application.UserModule.User;
+using ServianOps_Backend.Application.UserModule.User.UserDto;
+using ServianOps_Backend.Infrastructure.Authentication;
 
 namespace ServianOps_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/user")]
     [Authorize]
     public class UsersController : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly ICurrentTenant _currentTenant;
-
-        public UsersController(IUserService userService, ICurrentTenant currentTenant)
+        private readonly IUserService _service;
+        public UsersController(IUserService service)
         {
-            _userService = userService;
-            _currentTenant = currentTenant;
+            _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("get-all-users")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<UserListDto>>), 200)]
+        public async Task<IActionResult> GetAllUsers([FromQuery] UserFilterDto filter)
         {
-            if (User.IsInRole("SuperAdmin"))
-            {
-                var admins = await _userService.GetAdministratorsPagedAsync(pageNumber, pageSize);
-                return Ok(admins);
-            }
-
-            var users = await _userService.GetUsersPagedAsync(pageNumber, pageSize);
-            return Ok(users);
+            var result = await _service.GetAllUsers(filter);
+            return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("get-administrators")]
+        [ProducesResponseType(typeof(StandardResponse<PagedResultDto<UserListDto>>), 200)]
+        public async Task<IActionResult> GetAdministrators([FromQuery] UserFilterDto filter)
+        {
+            var result = await _service.GetAdministrators(filter);
+            return Ok(result);
+        }
+
+        [HttpGet("get-tenant-administrators/{tenantId}")]
+        [ProducesResponseType(typeof(StandardResponse<System.Collections.Generic.IReadOnlyList<UserListDto>>), 200)]
+        public async Task<IActionResult> GetTenantAdministrators(long tenantId)
+        {
+            var result = await _service.GetTenantAdministrators(tenantId);
+            return Ok(result);
+        }
+
+        [HttpGet("get-user-by-id/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<UserDetailDto>), 200)]
         public async Task<IActionResult> GetUserById(long id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null) return NotFound();
-            return Ok(user);
+            var result = await _service.GetUserById(id);
+            if (!result.Success) return NotFound(result);
+            return Ok(result);
         }
 
-        [HttpPost]
+        [HttpPost("create-user")]
+        [ProducesResponseType(typeof(StandardResponse<UserDetailDto>), 201)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            try
-            {
-                // Ensure a tenant id is present (usually extracted via Middleware)
-                if (!_currentTenant.TenantId.HasValue) return Forbid("No Tenant context found.");
-                
-                var user = await _userService.CreateUserAsync(dto, _currentTenant.TenantId.Value);
-                return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+            var result = await _service.CreateUser(dto, dto.TenantId);
+            if (!result.Success) return BadRequest(result);
+            return CreatedAtAction(nameof(GetUserById), new { id = result.Data?.Id ?? 0 }, result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(long id, [FromBody] CreateUserDto dto)
+        [HttpPut("update-user/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<UserDetailDto>), 200)]
+        public async Task<IActionResult> UpdateUser(long id, [FromBody] UpdateUserDto dto)
         {
-            try
-            {
-                await _userService.UpdateUserAsync(id, dto);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+            var result = await _service.UpdateUser(id, dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(long id)
-        {
-            await _userService.DeleteUserAsync(id);
-            return NoContent();
-        }
-
-        [HttpPatch("{id}/toggle-status")]
+        [HttpPut("toggle-user-status/{id}")]
+        [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public async Task<IActionResult> ToggleUserStatus(long id)
         {
-            await _userService.ToggleUserStatusAsync(id);
+            var result = await _service.ToggleUserStatus(id);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpDelete("delete-user/{id}")]
+        public async Task<IActionResult> DeleteUser(long id)
+        {
+            var result = await _service.DeleteUser(id);
+            if (!result.Success) return BadRequest(result);
             return NoContent();
         }
     }
