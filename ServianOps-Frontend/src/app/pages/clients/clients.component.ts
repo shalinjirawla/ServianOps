@@ -4,7 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { TopbarComponent } from '../../layout/topbar/topbar.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ToastService } from '../../shared/toast/toast.service';
-import { CustomerService, CustomerListDto } from '../../core/services/customer.service';
+import { CustomersService, CustomerTypesService, CustomerListDto } from '../../core/api/service-proxies';
+import { ConfirmationModalService } from '../../shared/confirmation-modal/confirmation-modal.service';
 
 @Component({
   selector: 'app-clients',
@@ -14,9 +15,11 @@ import { CustomerService, CustomerListDto } from '../../core/services/customer.s
   styleUrl: './clients.component.scss',
 })
 export class ClientsComponent implements OnInit {
-  private customerService = inject(CustomerService);
+  private customersService = inject(CustomersService);
+  private customerTypesService = inject(CustomerTypesService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
+  private confirmSvc = inject(ConfirmationModalService);
 
   rawClients: CustomerListDto[] = [];
   showDrawer = false;
@@ -69,15 +72,16 @@ export class ClientsComponent implements OnInit {
   }
 
   ensureDefaultCustomerTypeThenLoad() {
-    this.customerService.getCustomerTypes().subscribe({
-      next: (types) => {
+    this.customerTypesService.getAllCustomerTypes().subscribe({
+      next: (res) => {
+        const types = res.data?.items;
         if (types && types.length > 0) {
-          this.defaultCustomerTypeId = types[0].id;
+          this.defaultCustomerTypeId = types[0].id!;
           this.loadClients();
         } else {
-          this.customerService.createCustomerType('General').subscribe({
+          this.customerTypesService.createCustomerType({ name: 'General' }).subscribe({
             next: (newType) => {
-              this.defaultCustomerTypeId = newType.id;
+              this.defaultCustomerTypeId = newType.data?.id!;
               this.loadClients();
             },
             error: () => {
@@ -93,9 +97,9 @@ export class ClientsComponent implements OnInit {
   }
 
   loadClients() {
-    this.customerService.getCustomers(1, 200).subscribe({
-      next: (data) => {
-        this.rawClients = data;
+    this.customersService.getAllCustomers(undefined, undefined, undefined, undefined, undefined, undefined, 1, 200).subscribe({
+      next: (res) => {
+        this.rawClients = res.data?.items || [];
       },
       error: () => {
         this.toast.error('Failed to load clients from backend');
@@ -122,7 +126,7 @@ export class ClientsComponent implements OnInit {
     // 1. Filtering
     const q = this.searchQuery.toLowerCase().trim();
     if (q) {
-      list = list.filter(c => 
+      list = list.filter(c =>
         (c.companyName && c.companyName.toLowerCase().includes(q)) ||
         (c.name && c.name.toLowerCase().includes(q)) ||
         (c.contact && c.contact.toLowerCase().includes(q)) ||
@@ -205,8 +209,9 @@ export class ClientsComponent implements OnInit {
     this.selectedClientId = c.rawId;
     this.submitted = false;
 
-    this.customerService.getCustomerById(c.rawId).subscribe({
-      next: (detail) => {
+    this.customersService.getCustomerById(c.rawId).subscribe({
+      next: (res) => {
+        const detail = res.data!;
         const contact = detail.contacts && detail.contacts.length > 0 ? detail.contacts[0] : null;
         this.clientForm.patchValue({
           name: detail.companyName || detail.name,
@@ -218,7 +223,6 @@ export class ClientsComponent implements OnInit {
           terms: `Net ${detail.paymentTerms}`,
           vat: detail.vatNumber,
           poRequired: detail.isPORequired,
-          // rates and limits are not stored in backend but we keep defaults
           hourlyRate: 80,
           calloutFee: 120,
           outOfHoursMultiplier: 1.5,
@@ -277,7 +281,7 @@ export class ClientsComponent implements OnInit {
     };
 
     if (this.isEditMode && this.selectedClientId) {
-      this.customerService.updateCustomer(this.selectedClientId, payload).subscribe({
+      this.customersService.updateCustomer(this.selectedClientId, payload).subscribe({
         next: () => {
           this.toast.success('Client profile updated successfully');
           this.loadClients();
@@ -288,7 +292,7 @@ export class ClientsComponent implements OnInit {
         }
       });
     } else {
-      this.customerService.createCustomer(payload).subscribe({
+      this.customersService.createCustomer(payload).subscribe({
         next: () => {
           this.toast.success('Client profile created successfully');
           this.loadClients();
@@ -299,5 +303,24 @@ export class ClientsComponent implements OnInit {
         }
       });
     }
+  }
+
+  deleteClient(id: any) {
+    this.confirmSvc.confirm(
+      'Delete Client Profile',
+      'Are you sure you want to delete this client? This will also remove any associated historical records. This action cannot be undone.'
+    ).subscribe((confirmed) => {
+      if (confirmed) {
+        this.customersService.deleteCustomer(id).subscribe({
+          next: () => {
+            this.toast.success('Client profile deleted successfully');
+            this.loadClients();
+          },
+          error: (err) => {
+            this.toast.error(err.error?.error || 'Failed to delete client');
+          }
+        });
+      }
+    });
   }
 }

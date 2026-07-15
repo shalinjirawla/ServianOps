@@ -56,8 +56,8 @@ const ICONS: Record<string, string> = {
 })
 export class IconComponent implements OnChanges {
   @Input() name = '';
-  @Input() size = 20;
-  @Input() strokeWidth = 2;
+  @Input() size: number | string = 20;
+  @Input() strokeWidth: number | string = 2;
   svgContent: SafeHtml = '';
 
   constructor(private sanitizer: DomSanitizer) {}

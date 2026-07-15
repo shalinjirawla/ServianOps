@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, map } from 'rxjs';
 
 import { LoginDto, AuthResponseDto, UserSession } from '../models/auth.models';
 import { TokenService } from './token.service';
@@ -56,7 +56,16 @@ export class AuthService {
    * Log in user using the backend Unified Login API
    */
   login(dto: LoginDto): Observable<AuthResponseDto> {
-    return this.http.post<AuthResponseDto>(`${environment.apiUrl}/api/auth/login`, dto).pipe(
+    return this.http.post<{ success: boolean; message?: string; data?: AuthResponseDto }>(
+      `${environment.apiUrl}/api/auth/login`,
+      dto
+    ).pipe(
+      map(res => {
+        if (!res.success || !res.data) {
+          throw new Error(res.message || 'Authentication failed. Please verify credentials.');
+        }
+        return res.data;
+      }),
       tap((res) => {
         this.tokenService.setToken(res.token);
         const decoded = this.tokenService.decodeToken(res.token);
@@ -93,7 +102,6 @@ export class AuthService {
     const queryParams = reason ? { reason } : {};
     this.router.navigate(['/auth/login'], { queryParams });
   }
-
   /**
    * Forces client-side session cleanup due to expiry or interceptor actions
    */
@@ -112,5 +120,37 @@ export class AuthService {
    */
   forgotPassword(email: string, tenancyName?: string): Observable<any> {
     return this.http.post(`${environment.apiUrl}/api/auth/forgot-password`, { email, tenancyName });
+  }
+
+  /**
+   * Requests a refreshed JWT token from the backend refresh endpoint
+   */
+  refreshToken(): Observable<AuthResponseDto> {
+    return this.http.post<{ success: boolean; message?: string; data?: AuthResponseDto }>(
+      `${environment.apiUrl}/api/auth/refresh`,
+      {}
+    ).pipe(
+      map(res => {
+        if (!res.success || !res.data) {
+          throw new Error(res.message || 'Token refresh failed.');
+        }
+        return res.data;
+      }),
+      tap((res) => {
+        this.tokenService.setToken(res.token);
+        const decoded = this.tokenService.decodeToken(res.token);
+        if (decoded) {
+          const userSession: UserSession = {
+            token: res.token,
+            userId: res.userId,
+            tenantId: res.tenantId,
+            email: res.email,
+            role: res.role,
+            decodedToken: decoded
+          };
+          this.currentUser.set(userSession);
+        }
+      })
+    );
   }
 }

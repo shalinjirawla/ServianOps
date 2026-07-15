@@ -4,8 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { TopbarComponent } from '../../layout/topbar/topbar.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ToastService } from '../../shared/toast/toast.service';
-import { SiteService, SiteListDto } from '../../core/services/site.service';
-import { CustomerService } from '../../core/services/customer.service';
+import { SitesService, CustomersService, SiteListDto } from '../../core/api/service-proxies';
+import { ConfirmationModalService } from '../../shared/confirmation-modal/confirmation-modal.service';
 
 @Component({
   selector: 'app-sites',
@@ -15,10 +15,11 @@ import { CustomerService } from '../../core/services/customer.service';
   styleUrl: './sites.component.scss',
 })
 export class SitesComponent implements OnInit {
-  private siteService = inject(SiteService);
-  private customerService = inject(CustomerService);
+  private sitesService = inject(SitesService);
+  private customersService = inject(CustomersService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
+  private confirmSvc = inject(ConfirmationModalService);
 
   rawSites: SiteListDto[] = [];
   clients: { id: number; name: string }[] = [];
@@ -63,9 +64,9 @@ export class SitesComponent implements OnInit {
   }
 
   loadSites() {
-    this.siteService.getSites(1, 200).subscribe({
-      next: (data) => {
-        this.rawSites = data;
+    this.sitesService.getAllSites(undefined, undefined, undefined, undefined, undefined, 1, 200).subscribe({
+      next: (res) => {
+        this.rawSites = res.data?.items || [];
       },
       error: () => {
         this.toast.error('Failed to load sites from backend');
@@ -74,9 +75,12 @@ export class SitesComponent implements OnInit {
   }
 
   loadClientsDropdown() {
-    this.customerService.getCustomersDropdown().subscribe({
-      next: (data) => {
-        this.clients = data;
+    this.customersService.getCustomerLookup().subscribe({
+      next: (res) => {
+        this.clients = (res.data || []).map(c => ({
+          id: c.id!,
+          name: c.name || ''
+        }));
       },
       error: () => {
         this.toast.error('Failed to load client list for selection');
@@ -182,8 +186,9 @@ export class SitesComponent implements OnInit {
     this.selectedSiteId = s.rawId;
     this.submitted = false;
 
-    this.siteService.getSiteById(s.rawId).subscribe({
-      next: (detail) => {
+    this.sitesService.getSiteById(s.rawId).subscribe({
+      next: (res) => {
+        const detail = res.data!;
         const contact = detail.contacts && detail.contacts.length > 0 ? detail.contacts[0] : null;
         this.siteForm.patchValue({
           selectedClient: detail.customerId,
@@ -239,7 +244,7 @@ export class SitesComponent implements OnInit {
       parkingInformation: val.parking || '',
       keysOrCode: val.keysCode || '',
       siteNotes: val.notes || '',
-      accountManagerId: null,
+      accountManagerId: undefined,
       contactFirstName: firstName,
       contactLastName: lastName,
       contactMobile: '',
@@ -247,7 +252,7 @@ export class SitesComponent implements OnInit {
     };
 
     if (this.isEditMode && this.selectedSiteId) {
-      this.siteService.updateSite(this.selectedSiteId, payload).subscribe({
+      this.sitesService.updateSite(this.selectedSiteId, payload).subscribe({
         next: () => {
           this.toast.success('Site updated successfully');
           this.loadSites();
@@ -258,7 +263,7 @@ export class SitesComponent implements OnInit {
         }
       });
     } else {
-      this.siteService.createSite(payload).subscribe({
+      this.sitesService.createSite(payload).subscribe({
         next: () => {
           this.toast.success('Site registered successfully against client');
           this.loadSites();
@@ -269,5 +274,25 @@ export class SitesComponent implements OnInit {
         }
       });
     }
+  }
+
+  deleteSite(id: number | undefined) {
+    if (id === undefined) return;
+    this.confirmSvc.confirm(
+      'Delete Site Location',
+      'Are you sure you want to delete this site premises? This action cannot be undone.'
+    ).subscribe((confirmed) => {
+      if (confirmed) {
+        this.sitesService.deleteSite(id).subscribe({
+          next: () => {
+            this.toast.success('Site deleted successfully');
+            this.loadSites();
+          },
+          error: (err) => {
+            this.toast.error(err.error?.error || 'Failed to delete site');
+          }
+        });
+      }
+    });
   }
 }

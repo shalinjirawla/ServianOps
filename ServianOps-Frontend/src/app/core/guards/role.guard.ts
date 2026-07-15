@@ -1,9 +1,9 @@
 import { CanMatchFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { RoleService } from '../services/role.service';
+import { AuthService } from '../services/auth.service';
 
 export const roleGuard: CanMatchFn = (route, segments) => {
-  const roleService = inject(RoleService);
+  const authService = inject(AuthService);
   const router = inject(Router);
 
   // Read required roles defined in route configuration
@@ -13,12 +13,13 @@ export const roleGuard: CanMatchFn = (route, segments) => {
     return true;
   }
 
-  if (roleService.hasAnyRole(allowedRoles)) {
+  const role = authService.userRole();
+  if (role && allowedRoles.includes(role)) {
     return true;
   }
 
   // User does not possess authorization. Deny matching and redirect to home.
-  console.warn(`Access Denied: Required roles: [${allowedRoles.join(', ')}]. Current role: ${roleService.currentRole()}`);
+  console.warn(`Access Denied: Required roles: [${allowedRoles.join(', ')}]. Current role: ${role}`);
   router.navigate(['/dashboard']);
   return false;
 };

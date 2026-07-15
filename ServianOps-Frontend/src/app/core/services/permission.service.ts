@@ -1,31 +1,34 @@
 import { Injectable, inject, computed } from '@angular/core';
-import { RoleService, UserRoleType } from './role.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PermissionService {
-  private readonly roleService = inject(RoleService);
+  private readonly authService = inject(AuthService);
 
-  // Centralized client-side mapping of Role -> Permissions.
-  // In the future, this can merge permissions claims directly if returned in JWT.
+  // Centralized client-side mapping of Role -> Permissions matching routing guards.
   private readonly rolePermissionMap: Record<string, string[]> = {
-    [UserRoleType.SuperAdmin]: [
-      'dashboard',
-      'tenants',
-      'plans',
-      'profile',
-      'settings'
+    'SuperAdmin': [
+      'Pages.Tenants.View'
     ],
-    [UserRoleType.Administrator]: [
-      'dashboard',
-      'customers',
-      'jobs',
-      'invoices',
-      'reports',
-      'engineers',
-      'stock',
-      'settings'
+    'Admin': [
+      'Pages.Users.View',
+      'Pages.Customers.View',
+      'Pages.Properties.View',
+      'Pages.Jobs.View',
+      'Pages.Engineers.View',
+      'Pages.Quotes.View',
+      'Pages.Invoices.View'
+    ],
+    'Administrator': [
+      'Pages.Users.View',
+      'Pages.Customers.View',
+      'Pages.Properties.View',
+      'Pages.Jobs.View',
+      'Pages.Engineers.View',
+      'Pages.Quotes.View',
+      'Pages.Invoices.View'
     ]
   };
 
@@ -33,7 +36,7 @@ export class PermissionService {
    * Signal exposing current user permissions list
    */
   readonly userPermissions = computed(() => {
-    const role = this.roleService.currentRole();
+    const role = this.authService.userRole();
     if (!role) return [];
     return this.rolePermissionMap[role] || [];
   });

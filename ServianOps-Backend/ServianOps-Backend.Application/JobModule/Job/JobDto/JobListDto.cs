@@ -9,6 +9,7 @@ namespace ServianOps_Backend.Application.JobModule.Job.JobDto
     public class JobListDto : BaseAuditDto
     {
         public string JobNumber { get; set; }
+        public string Description { get; set; }
         public CustomerLookupDto Customer { get; set; }
         public SiteLookupDto Site { get; set; }
         public TradeLookupDto Trade { get; set; }

@@ -18,30 +18,39 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-muted/20">
-            <th (click)="setSort('companyName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+            <th (click)="setSort('companyName')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
               <div class="flex items-center gap-1">
                 Client
-                <app-icon *ngIf="sortField === 'companyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+                <app-icon *ngIf="sortField === 'companyName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
               </div>
             </th>
-            <th (click)="setSort('primaryContactName')" class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+            <th (click)="setSort('primaryContactName')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
               <div class="flex items-center gap-1">
                 Primary contact
-                <app-icon *ngIf="sortField === 'primaryContactName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'" [size]="14"></app-icon>
+                <app-icon *ngIf="sortField === 'primaryContactName'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
               </div>
             </th>
-            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Sites</th>
-            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Open jobs</th>
-            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Terms</th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Sites
+            </th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Open
+              jobs</th>
+            <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Terms
+            </th>
             <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">VAT</th>
             <th class="h-11 px-4 w-10"></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of clients" (click)="openEditDrawer(c)" class="border-b border-border hover:bg-muted/50 cursor-pointer last:border-0">
+          <tr *ngFor="let c of clients" (click)="openEditDrawer(c)"
+            class="border-b border-border hover:bg-muted/50 cursor-pointer last:border-0">
             <td class="p-4 align-middle">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-primary text-primary-foreground grid place-items-center shrink-0">
+                <div
+                  class="w-10 h-10 rounded-lg bg-gradient-primary text-primary-foreground grid place-items-center shrink-0">
                   <app-icon name="building" [size]="16"></app-icon>
                 </div>
                 <div class="min-w-0">
@@ -66,9 +75,15 @@
             <td class="p-4 align-middle hidden lg:table-cell text-sm text-muted-foreground">{{ c.terms }}</td>
             <td class="p-4 align-middle hidden lg:table-cell font-mono text-xs text-muted-foreground">{{ c.vat }}</td>
             <td class="p-4 align-middle" (click)="$event.stopPropagation()">
-              <button type="button" (click)="openEditDrawer(c)" class="btn btn-ghost btn-icon">
-                <app-icon name="edit-2" [size]="16"></app-icon>
-              </button>
+              <div class="flex items-center gap-1">
+                <button type="button" (click)="openEditDrawer(c)" class="btn btn-ghost btn-icon" title="Edit Client">
+                  <app-icon name="edit-2" [size]="16"></app-icon>
+                </button>
+                <button type="button" (click)="deleteClient(c.rawId)"
+                  class="btn btn-ghost btn-icon text-destructive hover:bg-destructive/10" title="Delete Client">
+                  <app-icon name="trash-2" [size]="16"></app-icon>
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="clients.length === 0">
@@ -83,14 +98,17 @@
     <!-- Pagination Controls -->
     <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
       <div class="text-xs text-muted-foreground">
-        Showing {{ filteredAndSortedClients.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to 
-        {{ mathMin(currentPage * pageSize, filteredAndSortedClients.length) }} of {{ filteredAndSortedClients.length }} clients
+        Showing {{ filteredAndSortedClients.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to
+        {{ mathMin(currentPage * pageSize, filteredAndSortedClients.length) }} of {{ filteredAndSortedClients.length }}
+        clients
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1" class="btn btn-xs btn-outline">
+        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1"
+          class="btn btn-xs btn-outline">
           <app-icon name="chevron-left" [size]="14"></app-icon> Previous
         </button>
-        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1" class="btn btn-xs btn-outline">
+        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1"
+          class="btn btn-xs btn-outline">
           Next <app-icon name="chevron-right" [size]="14"></app-icon>
         </button>
       </div>
@@ -103,7 +121,8 @@
   (click)="closeDrawer()"></div>
 
 <!-- Slide-over Drawer Panel -->
-<div class="fixed inset-y-0 right-0 max-w-2xl w-full bg-card border-l border-border shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden translate-x-full"
+<div
+  class="fixed inset-y-0 right-0 max-w-2xl w-full bg-card border-l border-border shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden translate-x-full"
   [class.translate-x-0]="showDrawer" [class.translate-x-full]="!showDrawer">
   <!-- Header -->
   <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
@@ -276,11 +295,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
-            <input type="checkbox" formControlName="emailInvoice" class="h-4 w-4 rounded border-input" /> 
+            <input type="checkbox" formControlName="emailInvoice" class="h-4 w-4 rounded border-input" />
             Auto-email Invoice on completion
           </label>
           <label class="flex items-center gap-2.5 text-xs text-muted-foreground select-none">
-            <input type="checkbox" formControlName="autoNotify" class="h-4 w-4 rounded border-input" /> 
+            <input type="checkbox" formControlName="autoNotify" class="h-4 w-4 rounded border-input" />
             SMS/Email customer job updates
           </label>
         </div>
@@ -288,11 +307,19 @@
     </div>
 
     <!-- Submit Section -->
-    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
-      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
-      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
-        {{ isEditMode ? 'Update Client Profile' : 'Save Client Profile' }}
-      </button>
+    <div class="pt-6 border-t border-border flex items-center justify-between bg-muted/10 -mx-6 -mb-6 p-6">
+      <div>
+        <button type="button" *ngIf="isEditMode" (click)="deleteClient(selectedClientId!); closeDrawer()"
+          class="btn btn-ghost text-destructive hover:bg-destructive/10 h-11 px-4">
+          Delete Client
+        </button>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+        <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+          {{ isEditMode ? 'Update Client Profile' : 'Save Client Profile' }}
+        </button>
+      </div>
     </div>
   </form>
 </div>

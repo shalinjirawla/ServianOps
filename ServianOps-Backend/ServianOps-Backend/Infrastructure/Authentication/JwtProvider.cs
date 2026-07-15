@@ -28,7 +28,7 @@ namespace ServianOps_Backend.Infrastructure.Authentication
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 
                 // Custom Multi-Tenant claims
-                new Claim("tenant_id", user.TenantId.ToString()),
+                new Claim("tenant_id", user.TenantId?.ToString() ?? ""),
                 new Claim("user_id", user.Id.ToString()),
                 new Claim(ClaimTypes.Role, roleName)
             };

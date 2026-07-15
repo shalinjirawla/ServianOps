@@ -7,8 +7,8 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { LoginDto } from '../../core/models/auth.models';
-
+import { LoginDto, UserSession } from '../../core/models/auth.models';
+import { TokenService } from '../../core/services/token.service';
 type AuthView = 'LOGIN' | 'SIGNUP' | 'FORGOT' | 'OTP';
 @Component({
   selector: 'app-login',
@@ -19,8 +19,9 @@ type AuthView = 'LOGIN' | 'SIGNUP' | 'FORGOT' | 'OTP';
 })
 export class LoginComponent implements OnInit {
 
-  constructor(private auth: AuthService,
+  constructor(
     private toast: ToastService,
+    private tokenService: TokenService,
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly storage: StorageService,
@@ -59,11 +60,13 @@ export class LoginComponent implements OnInit {
   private readonly REMEMBER_TENANCY_KEY = 'so_remember_tenancy';
 
   ngOnInit(): void {
-    // 1. Parse route query params for session reasons (expired / unauthorized)
+    // 1. Parse route query params for session reasons (expired / unauthorized / inactive)
     this.route.queryParams.subscribe((params) => {
       const reason = params['reason'];
       if (reason === 'expired') {
         this.sessionExpiredMessage.set('Your session has expired. Please log in again.');
+      } else if (reason === 'inactive') {
+        this.sessionExpiredMessage.set('Logged out due to inactivity. Please sign in again.');
       } else if (reason === 'unauthorized') {
         this.sessionExpiredMessage.set('Access denied. Please sign in with authorized credentials.');
       } else {
@@ -155,20 +158,25 @@ export class LoginComponent implements OnInit {
       next: (res) => {
         // 1. Process Remember Me credentials cache
         if (formValues.rememberMe) {
-          this.storage.setLocalItem(this.REMEMBER_EMAIL_KEY, loginPayload.email);
-          if (loginPayload.tenancyName) {
-            this.storage.setLocalItem(this.REMEMBER_TENANCY_KEY, loginPayload.tenancyName);
-          } else {
-            this.storage.removeLocalItem(this.REMEMBER_TENANCY_KEY);
-          }
+          this.storage.setLocalItem(this.REMEMBER_EMAIL_KEY, formValues.email.trim());
+          this.storage.setLocalItem(this.REMEMBER_TENANCY_KEY, formValues.tenancyName?.trim() || '');
         } else {
           this.storage.removeLocalItem(this.REMEMBER_EMAIL_KEY);
           this.storage.removeLocalItem(this.REMEMBER_TENANCY_KEY);
         }
 
-        // 2. Alert success & redirect
+        // 2. Alert success & redirect (role-based)
         this.toastService.success(`Welcome back! Successfully logged in as ${res.role}.`);
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+        
+        let returnUrl = this.route.snapshot.queryParams['returnUrl'];
+        if (!returnUrl || returnUrl === '/' || returnUrl === '/dashboard') {
+          if (res.role === 'SuperAdmin') {
+            returnUrl = '/tenants';
+          } else {
+            returnUrl = '/dashboard';
+          }
+        }
+
         this.router.navigateByUrl(returnUrl);
         this.isLoading.set(false);
       },

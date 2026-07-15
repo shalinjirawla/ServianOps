@@ -41,7 +41,7 @@ export class QuotesComponent implements OnInit {
   // Filter State
   searchQuery = '';
 
-  ngOnInit() {}
+  ngOnInit() { }
 
   get filteredAndSortedQuotes() {
     let list = [...this.rawQuotes];
