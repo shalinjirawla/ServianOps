@@ -16,6 +16,8 @@ namespace ServianOps_Backend.Application.TenantModule.Tenant.TenantDto
         public bool IsTrial { get; set; }
         public bool IsExpired { get; set; }
 
+        public string LogoUrl { get; set; }
+
         public ServianOps_Backend.Application.UserModule.User.UserDto.UserLookupDto AdminUser { get; set; }
     }
 }

@@ -4,10 +4,8 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { TopbarComponent } from '../../layout/topbar/topbar.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ToastService } from '../../shared/toast/toast.service';
-import { JobService, JobListDto, PriorityEnum } from '../../core/services/job.service';
-import { CustomerService } from '../../core/services/customer.service';
-import { SiteService } from '../../core/services/site.service';
-import { TradeService } from '../../core/services/trade.service';
+import { JobsService, CustomersService, SitesService, TradesService, JobListDto, PriorityEnum } from '../../core/api/service-proxies';
+import { ConfirmationModalService } from '../../shared/confirmation-modal/confirmation-modal.service';
 
 const priorityTone: Record<string, string> = {
   P1: 'bg-destructive text-destructive-foreground',
@@ -31,12 +29,13 @@ const statusColors: Record<string, string> = {
   styleUrl: './jobs.component.scss',
 })
 export class JobsComponent implements OnInit {
-  private jobService = inject(JobService);
-  private customerService = inject(CustomerService);
-  private siteService = inject(SiteService);
-  private tradeService = inject(TradeService);
+  private jobsService = inject(JobsService);
+  private customersService = inject(CustomersService);
+  private sitesService = inject(SitesService);
+  private tradesService = inject(TradesService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
+  private confirmSvc = inject(ConfirmationModalService);
 
   rawJobs: JobListDto[] = [];
   customers: { id: number; name: string }[] = [];
@@ -63,6 +62,8 @@ export class JobsComponent implements OnInit {
   showDrawer = false;
   submitted = false;
   jobForm!: FormGroup;
+  isEditMode = false;
+  selectedJobId: number | null = null;
 
   ngOnInit() {
     this.initForm();
@@ -91,9 +92,9 @@ export class JobsComponent implements OnInit {
   }
 
   loadJobs() {
-    this.jobService.getJobs(1, 200).subscribe({
-      next: (data) => {
-        this.rawJobs = data;
+    this.jobsService.getAllJobs(undefined, undefined, undefined, undefined, undefined, undefined, undefined, 1, 200).subscribe({
+      next: (res) => {
+        this.rawJobs = res.data?.items || [];
       },
       error: () => {
         this.toast.error('Failed to load jobs from backend');
@@ -102,30 +103,39 @@ export class JobsComponent implements OnInit {
   }
 
   loadDropdownData() {
-    this.customerService.getCustomersDropdown().subscribe({
-      next: (data) => {
-        this.customers = data;
-      }
-    });
-
-    this.siteService.getSites(1, 200).subscribe({
-      next: (data) => {
-        this.sites = data.map(s => ({
-          id: s.id,
-          siteName: s.siteName,
-          customerId: s.customer?.id
+    this.customersService.getCustomerLookup().subscribe({
+      next: (res) => {
+        this.customers = (res.data || []).map(c => ({
+          id: c.id!,
+          name: c.name || ''
         }));
       }
     });
 
-    this.tradeService.getTrades(1, 200).subscribe({
-      next: (data) => {
-        this.trades = data;
-        if (data.length === 0) {
+    this.sitesService.getAllSites(undefined, undefined, undefined, undefined, undefined, 1, 200).subscribe({
+      next: (res) => {
+        this.sites = (res.data?.items || []).map(s => ({
+          id: s.id!,
+          siteName: s.siteName || '',
+          customerId: s.customer?.id!
+        }));
+      }
+    });
+
+    this.tradesService.getAllTrades(undefined, undefined, undefined, undefined, 1, 200).subscribe({
+      next: (res) => {
+        this.trades = (res.data?.items || []).map(t => ({
+          id: t.id!,
+          name: t.name || ''
+        }));
+        if (this.trades.length === 0) {
           // seed a default trade if none exists
-          this.tradeService.createTrade('General').subscribe({
+          this.tradesService.createTrade({ name: 'General' }).subscribe({
             next: (newTrade) => {
-              this.trades = [newTrade];
+              this.trades = [{
+                id: newTrade.data?.id!,
+                name: newTrade.data?.name || ''
+              }];
             }
           });
         }
@@ -239,6 +249,8 @@ export class JobsComponent implements OnInit {
   }
 
   openDrawer() {
+    this.isEditMode = false;
+    this.selectedJobId = null;
     this.submitted = false;
     this.jobForm.reset({
       priority: '2',
@@ -246,6 +258,32 @@ export class JobsComponent implements OnInit {
       nte: 0
     });
     this.showDrawer = true;
+  }
+
+  openEditDrawer(j: any) {
+    this.isEditMode = true;
+    this.selectedJobId = j.rawId;
+    this.submitted = false;
+
+    this.jobsService.getJobById(j.rawId).subscribe({
+      next: (res) => {
+        const detail = res.data!;
+        this.jobForm.patchValue({
+          customerId: detail.customerId,
+          siteId: detail.siteId,
+          tradeId: detail.tradeId,
+          description: detail.description,
+          priority: detail.priority?.toString(),
+          poNumber: detail.poNumber,
+          budget: detail.budget,
+          nte: detail.nte
+        });
+        this.showDrawer = true;
+      },
+      error: () => {
+        this.toast.error('Failed to load job details');
+      }
+    });
   }
 
   closeDrawer() {
@@ -262,24 +300,78 @@ export class JobsComponent implements OnInit {
     }
 
     const val = this.jobForm.value;
-    const formData = new FormData();
-    formData.append('customerId', val.customerId.toString());
-    formData.append('siteId', val.siteId.toString());
-    formData.append('tradeId', val.tradeId.toString());
-    formData.append('description', val.description);
-    formData.append('priority', val.priority.toString());
-    formData.append('poNumber', val.poNumber || '');
-    formData.append('budget', (val.budget || 0).toString());
-    formData.append('nte', (val.nte || 0).toString());
+    const customerId = Number(val.customerId);
+    const siteId = Number(val.siteId);
+    const tradeId = Number(val.tradeId);
+    const description = val.description;
+    const priority = Number(val.priority) as PriorityEnum;
+    const poNumber = val.poNumber || '';
+    const budget = Number(val.budget) || 0;
+    const nte = Number(val.nte) || 0;
+    const attachments = undefined;
 
-    this.jobService.createJob(formData).subscribe({
-      next: () => {
-        this.toast.success('Job logged successfully');
-        this.loadJobs();
-        this.closeDrawer();
-      },
-      error: () => {
-        this.toast.error('Failed to raise new job request');
+    if (this.isEditMode && this.selectedJobId) {
+      this.jobsService.updateJob(
+        this.selectedJobId,
+        customerId,
+        siteId,
+        tradeId,
+        description,
+        priority,
+        poNumber,
+        budget,
+        nte,
+        attachments
+      ).subscribe({
+        next: () => {
+          this.toast.success('Job ticket updated successfully');
+          this.loadJobs();
+          this.closeDrawer();
+        },
+        error: () => {
+          this.toast.error('Failed to update job details');
+        }
+      });
+    } else {
+      this.jobsService.createJob(
+        customerId,
+        siteId,
+        tradeId,
+        description,
+        priority,
+        poNumber,
+        budget,
+        nte,
+        attachments
+      ).subscribe({
+        next: () => {
+          this.toast.success('Job ticket logged successfully');
+          this.loadJobs();
+          this.closeDrawer();
+        },
+        error: () => {
+          this.toast.error('Failed to raise new job request');
+        }
+      });
+    }
+  }
+
+  deleteJob(id: number | undefined) {
+    if (id === undefined) return;
+    this.confirmSvc.confirm(
+      'Delete Job Ticket',
+      'Are you sure you want to delete this job ticket? This action cannot be undone.'
+    ).subscribe((confirmed) => {
+      if (confirmed) {
+        this.jobsService.deleteJob(id).subscribe({
+          next: () => {
+            this.toast.success('Job ticket deleted successfully');
+            this.loadJobs();
+          },
+          error: (err) => {
+            this.toast.error(err.error?.error || 'Failed to delete job');
+          }
+        });
       }
     });
   }

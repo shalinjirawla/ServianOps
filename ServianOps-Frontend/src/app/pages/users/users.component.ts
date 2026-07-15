@@ -4,8 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { TopbarComponent } from '../../layout/topbar/topbar.component';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { ToastService } from '../../shared/toast/toast.service';
-import { UserService, User } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UserDetailDto, UsersService, RolesService, RoleLookupDto } from '../../core/api/service-proxies';
 import { Router } from '@angular/router';
 import { ConfirmationModalService } from '../../shared/confirmation-modal/confirmation-modal.service';
 
@@ -18,7 +18,8 @@ import { ConfirmationModalService } from '../../shared/confirmation-modal/confir
 })
 export class UsersComponent implements OnInit {
   searchQuery = '';
-  rawUsers: User[] = [];
+  rawUsers: any[] = [];
+  rolesList: RoleLookupDto[] = [];
 
   showDrawer = false;
   isEditMode = false;
@@ -28,7 +29,8 @@ export class UsersComponent implements OnInit {
   userForm!: FormGroup;
 
   constructor(
-    private userService: UserService,
+    private userService: UsersService,
+    private rolesService: RolesService,
     private auth: AuthService,
     private toast: ToastService,
     private router: Router,
@@ -41,6 +43,7 @@ export class UsersComponent implements OnInit {
       this.router.navigate(['/tenants']);
       return;
     }
+    this.loadRoles();
     this.loadUsers();
     this.initForm();
   }
@@ -51,14 +54,26 @@ export class UsersComponent implements OnInit {
       lastName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.pattern('^(\\+?[0-9\\s\\-\\(\\)]{7,20})?$')]],
+      roleId: ['', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
+  loadRoles() {
+    this.rolesService.getRoleLookup().subscribe({
+      next: (res) => {
+        this.rolesList = res.data || [];
+      },
+      error: () => {
+        this.toast.error('Failed to load user roles');
+      }
+    });
+  }
+
   loadUsers() {
-    this.userService.getUsers().subscribe({
+    this.userService.getAllUsers().subscribe({
       next: (data) => {
-        this.rawUsers = data;
+        this.rawUsers = data.data?.items || [];
       },
       error: () => {
         this.toast.error('Failed to load users');
@@ -83,9 +98,9 @@ export class UsersComponent implements OnInit {
     if (q) {
       list = list.filter(
         (u) =>
-          u.firstName.toLowerCase().includes(q) ||
-          u.lastName.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)
+          (u.firstName || '').toLowerCase().includes(q) ||
+          (u.lastName || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q)
       );
     }
 
@@ -129,29 +144,39 @@ export class UsersComponent implements OnInit {
     this.selectedUserId = null;
     this.submitted = false;
 
-    this.userForm.reset();
+    this.userForm.reset({
+      roleId: ''
+    });
     this.userForm.get('email')?.enable();
     this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userForm.get('roleId')?.setValidators([Validators.required]);
+    this.userForm.get('roleId')?.updateValueAndValidity();
 
     this.showDrawer = true;
   }
 
-  openEditDrawer(u: User) {
+  openEditDrawer(u: any) {
     this.isEditMode = true;
     this.selectedUserId = u.id;
     this.submitted = false;
+
+    const userRoleName = u.roles && u.roles.length > 0 ? u.roles[0] : '';
+    const matchingRole = this.rolesList.find(r => r.name === userRoleName);
 
     this.userForm.patchValue({
       firstName: u.firstName,
       lastName: u.lastName,
       email: u.email,
       phone: u.phone,
-      password: ''
+      roleId: matchingRole ? matchingRole.id : '',
+      password: 'N/A' // dummy value to satisfy form
     });
     this.userForm.get('email')?.disable();
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userForm.get('roleId')?.setValidators([Validators.required]);
+    this.userForm.get('roleId')?.updateValueAndValidity();
 
     this.showDrawer = true;
   }
@@ -176,6 +201,8 @@ export class UsersComponent implements OnInit {
         firstName: payload.firstName,
         lastName: payload.lastName,
         phone: payload.phone,
+        email: payload.email,
+        roleIds: [Number(payload.roleId)],
       }).subscribe({
         next: () => {
           this.toast.success('User updated successfully');
@@ -193,6 +220,7 @@ export class UsersComponent implements OnInit {
         email: payload.email,
         phone: payload.phone,
         password: payload.password,
+        roleIds: [Number(payload.roleId)],
       }).subscribe({
         next: () => {
           this.toast.success('User created successfully');
@@ -225,7 +253,7 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  toggleStatus(u: User) {
+  toggleStatus(u: any) {
     this.userService.toggleUserStatus(u.id).subscribe({
       next: () => {
         this.toast.success(`User status updated`);

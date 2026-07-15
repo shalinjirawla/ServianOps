@@ -8,8 +8,8 @@
       <div class="relative flex-1 min-w-64">
         <app-icon name="search" [size]="16"
           class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"></app-icon>
-        <input placeholder="Search by company, tenancy key, or admin email" [(ngModel)]="searchQuery"
-          class="input pl-9" />
+        <input placeholder="Search by company, tenancy key, or admin email" [ngModel]="searchQuery"
+          (ngModelChange)="onSearchChange($event)" class="input pl-9" />
       </div>
       <button type="button" (click)="openCreateDrawer()" class="btn btn-primary bg-gradient-primary">
         <app-icon name="plus" [size]="16"></app-icon> New Tenant
@@ -49,44 +49,96 @@
               </div>
             </th>
             <th class="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Phone</th>
+            <th (click)="setSort('isActive')"
+              class="h-11 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              <div class="flex items-center gap-1">
+                Status
+                <app-icon *ngIf="sortField === 'isActive'" [name]="sortAsc ? 'chevron-up' : 'chevron-down'"
+                  [size]="14"></app-icon>
+              </div>
+            </th>
+            <th class="h-11 px-4 w-32 text-right font-medium text-muted-foreground">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let t of tenants" class="border-b border-border hover:bg-muted/50 last:border-0">
-            <td class="p-4 align-middle">
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-10 h-10 rounded-lg bg-gradient-accent text-accent-foreground grid place-items-center shrink-0">
-                  <app-icon name="server" [size]="16"></app-icon>
-                </div>
-                <div class="min-w-0">
-                  <div class="font-medium text-foreground">{{ t.companyName }}</div>
-                </div>
+          <!-- Loading -->
+          <tr *ngIf="loading">
+            <td colspan="7" class="p-8 text-center text-muted-foreground">
+              <div class="flex items-center justify-center gap-2">
+                <app-icon name="loader" [size]="16" class="animate-spin"></app-icon>
+                Loading tenants…
               </div>
             </td>
-            <td class="p-4 align-middle font-mono font-bold text-primary">
-              {{ t.tenancyName }}
-            </td>
-            <td class="p-4 align-middle" *ngIf="getAdminUser(t) as admin">
-              <div *ngIf="admin.firstName || admin.lastName" class="font-medium text-foreground">
-                {{ admin.firstName }} {{ admin.lastName }}
-              </div>
-              <div *ngIf="admin.email" class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
-                <app-icon name="mail" [size]="12" class="text-primary"></app-icon>{{ admin.email }}
-              </div>
-              <span *ngIf="!admin.firstName && !admin.lastName && !admin.email" class="text-muted-foreground">—</span>
-            </td>
-            <td class="p-4 align-middle">
-              <span class="badge" [class.badge-secondary]="t.planId === 1" [class.text-success]="t.planId === 3"
-                [class.text-info]="t.planId === 2">
-                {{ getPlanName(t.planId) }}
-              </span>
-            </td>
-            <td class="p-4 align-middle text-muted-foreground">{{ getAdminUser(t)?.phone || '—' }}</td>
           </tr>
-          <tr *ngIf="tenants.length === 0">
-            <td colspan="5" class="p-8 text-center text-muted-foreground">No tenants found matching your query.</td>
+
+          <!-- Error -->
+          <tr *ngIf="!loading && loadError">
+            <td colspan="7" class="p-8 text-center text-destructive">
+              Couldn't load tenants.
+              <button type="button" (click)="loadTenants()" class="underline ml-1">Try again</button>
+            </td>
           </tr>
+
+          <!-- Rows -->
+          <ng-container *ngIf="!loading && !loadError">
+            <tr *ngFor="let t of tenants" class="border-b border-border hover:bg-muted/50 last:border-0">
+              <td class="p-4 align-middle">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-lg bg-gradient-accent text-accent-foreground grid place-items-center shrink-0 overflow-hidden">
+                    <app-icon name="server" [size]="16"></app-icon>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-medium text-foreground">{{ t.companyName }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="p-4 align-middle font-mono font-bold text-primary">
+                {{ t.tenancyName }}
+              </td>
+              <td class="p-4 align-middle">
+                <ng-container *ngIf="getAdminUser(t) as admin; else noAdmin">
+                  <div *ngIf="admin.fullName" class="font-medium text-foreground">{{ admin.fullName }}</div>
+                  <div *ngIf="admin.email"
+                    class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
+                    <app-icon name="mail" [size]="12" class="text-primary"></app-icon>{{ admin.email }}
+                  </div>
+                  <span *ngIf="!admin.fullName && !admin.email" class="text-muted-foreground">—</span>
+                </ng-container>
+                <ng-template #noAdmin><span class="text-muted-foreground">—</span></ng-template>
+              </td>
+              <td class="p-4 align-middle">
+                <span class="badge" [class.badge-secondary]="t.plan?.id === 1" [class.text-success]="t.plan?.id === 3"
+                  [class.text-info]="t.plan?.id === 2">
+                  {{ getPlanName(t.plan?.id) }}
+                </span>
+              </td>
+              <td class="p-4 align-middle text-muted-foreground">—</td>
+              <td class="p-4 align-middle">
+                <span class="badge" [class.text-success]="t.isActive" [class.text-destructive]="!t.isActive">
+                  {{ t.isActive ? 'Active' : 'Inactive' }}
+                </span>
+                <span *ngIf="t.isExpired" class="badge text-destructive ml-1">Expired</span>
+                <span *ngIf="t.isTrial" class="badge text-info ml-1">Trial</span>
+              </td>
+              <td class="p-4 align-middle text-right space-x-1" (click)="$event.stopPropagation()">
+                <button type="button" (click)="openEditDrawer(t)"
+                  class="btn btn-icon btn-ghost text-primary hover:bg-primary/10 rounded-lg h-9 w-9 inline-grid place-items-center"
+                  title="Edit Tenant">
+                  <app-icon name="edit-2" [size]="16"></app-icon>
+                </button>
+                <button type="button" (click)="deleteTenant(t.id!)" [disabled]="deletingId === t.id"
+                  class="btn btn-icon btn-ghost text-destructive hover:bg-destructive/10 rounded-lg h-9 w-9 inline-grid place-items-center disabled:opacity-50"
+                  title="Delete Tenant">
+                  <app-icon [name]="deletingId === t.id ? 'loader' : 'trash-2'" [size]="16"
+                    [class.animate-spin]="deletingId === t.id"></app-icon>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="tenants.length === 0">
+              <td colspan="7" class="p-8 text-center text-muted-foreground">No tenants found matching your query.</td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -94,16 +146,15 @@
     <!-- Pagination Controls -->
     <div class="p-4 border-t border-border flex flex-wrap items-center justify-between gap-3 bg-muted/10">
       <div class="text-xs text-muted-foreground">
-        Showing {{ filteredAndSortedTenants.length === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} to
-        {{ mathMin(currentPage * pageSize, filteredAndSortedTenants.length) }} of {{ filteredAndSortedTenants.length }}
-        tenants
+        Showing {{ rangeStart }} to {{ rangeEnd }} of {{ totalCount }} tenants
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1"
+        <button type="button" [disabled]="currentPage === 1 || loading" (click)="goToPage(currentPage - 1)"
           class="btn btn-xs btn-outline">
           <app-icon name="chevron-left" [size]="14"></app-icon> Previous
         </button>
-        <button type="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1"
+        <span class="text-xs text-muted-foreground">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button type="button" [disabled]="currentPage === totalPages || loading" (click)="goToPage(currentPage + 1)"
           class="btn btn-xs btn-outline">
           Next <app-icon name="chevron-right" [size]="14"></app-icon>
         </button>
@@ -123,9 +174,10 @@
   <!-- Header -->
   <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
     <div>
-      <h2 class="text-xl font-bold tracking-tight text-foreground">Create SaaS Tenant</h2>
-      <p class="text-xs text-muted-foreground mt-1">Configure database instance, assign subscription level, and set
-        Admin credentials.</p>
+      <h2 class="text-xl font-bold tracking-tight text-foreground">{{ isEditMode ? 'Edit SaaS Tenant' : 'Create SaaS
+        Tenant' }}</h2>
+      <p class="text-xs text-muted-foreground mt-1">{{ isEditMode ? 'Configure database instance and subscription
+        level.' : 'Configure database instance, assign subscription level, and set Admin credentials.' }}</p>
     </div>
     <button type="button" (click)="closeDrawer()" class="btn btn-ghost btn-icon h-9 w-9 rounded-full">
       <app-icon name="x" [size]="18"></app-icon>
@@ -133,7 +185,28 @@
   </div>
 
   <!-- Content (Scrollable) -->
-  <form [formGroup]="tenantForm" (ngSubmit)="saveTenant()" class="flex-1 overflow-y-auto p-6 space-y-6">
+  <form [formGroup]="tenantForm" (ngSubmit)="saveTenant()" class="flex-1 overflow-y-auto p-6 space-y-6 relative">
+    <!-- Loading Details overlay -->
+    <div *ngIf="loadingDetails"
+      class="absolute inset-0 bg-background/85 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+      <div class="flex flex-col items-center gap-2">
+        <app-icon name="loader" [size]="28" class="animate-spin text-primary"></app-icon>
+        <span class="text-sm font-medium text-muted-foreground">Loading tenant details...</span>
+      </div>
+    </div>
+
+    <!-- Backend errors banner -->
+    <div *ngIf="formErrors.length > 0"
+      class="p-3 mb-4 rounded-md bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0 mt-0.5"></app-icon>
+      <div class="space-y-1">
+        <div class="font-medium text-sm">Please correct the following errors:</div>
+        <ul class="list-disc pl-4 text-xs space-y-0.5">
+          <li *ngFor="let err of formErrors">{{ err }}</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Section 1: Tenancy Info -->
     <div class="space-y-4">
       <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">1. Tenancy
@@ -143,35 +216,39 @@
           <label for="companyName" class="text-xs font-medium text-muted-foreground">Company Name *</label>
           <input id="companyName" type="text" formControlName="companyName" class="input h-10"
             placeholder="e.g. Apex Logistics Ltd" />
-          <span *ngIf="submitted && tenantForm.get('companyName')?.errors?.['required']"
+          <span
+            *ngIf="tenantForm.get('companyName')?.errors?.['required'] && (tenantForm.get('companyName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Company Name is required.</span>
         </div>
         <div class="space-y-1.5">
           <label for="tenancyName" class="text-xs font-medium text-muted-foreground">Tenancy Key / Subdomain *</label>
           <input id="tenancyName" type="text" formControlName="tenancyName" class="input h-10 font-mono font-bold"
-            placeholder="e.g. apex" />
-          <span *ngIf="submitted && tenantForm.get('tenancyName')?.errors?.['required']"
+            placeholder="e.g. apex" [readonly]="isEditMode" />
+          <span
+            *ngIf="tenantForm.get('tenancyName')?.errors?.['required'] && (tenantForm.get('tenancyName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Tenancy Key is required.</span>
-          <span *ngIf="submitted && tenantForm.get('tenancyName')?.errors?.['pattern']"
+          <span
+            *ngIf="tenantForm.get('tenancyName')?.errors?.['pattern'] && (tenantForm.get('tenancyName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Alphanumeric characters and hyphens only.</span>
-          <span *ngIf="submitted && tenantForm.get('tenancyName')?.errors?.['minlength']"
+          <span
+            *ngIf="tenantForm.get('tenancyName')?.errors?.['minlength'] && (tenantForm.get('tenancyName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Key must be at least 2 characters.</span>
         </div>
       </div>
-
 
       <div class="space-y-1.5 col-span-2">
         <label for="logoUpload" class="text-xs font-medium text-muted-foreground">Company Logo *</label>
 
         <div class="flex items-center gap-4">
-          <!-- Preview -->
           <div *ngIf="logoPreviewUrl"
             class="w-16 h-16 rounded-lg border border-border bg-muted/30 grid place-items-center shrink-0 overflow-hidden">
             <img [src]="logoPreviewUrl" alt="Logo preview" class="w-full h-full object-cover" />
-            <app-icon *ngIf="!logoPreviewUrl" name="image" [size]="20" class="text-muted-foreground"></app-icon>
+          </div>
+          <div *ngIf="!logoPreviewUrl"
+            class="w-16 h-16 rounded-lg border border-border bg-muted/30 grid place-items-center shrink-0">
+            <app-icon name="image" [size]="20" class="text-muted-foreground"></app-icon>
           </div>
 
-          <!-- File input -->
           <div class="flex-1 space-y-1">
             <input #logoInput id="logoUpload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
               (change)="onLogoSelected($event)"
@@ -186,9 +263,11 @@
         </div>
 
         <span *ngIf="logoFileError" class="text-xs text-destructive mt-1 block">{{ logoFileError }}</span>
-        <span *ngIf="submitted && !logoFileError && tenantForm.get('logoUrl')?.errors?.['required']"
+        <span
+          *ngIf="tenantForm.get('logoUrl')?.errors?.['required'] && (tenantForm.get('logoUrl')?.touched || submitted) && !logoFileError"
           class="text-xs text-destructive mt-1 block">Company logo is required.</span>
       </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <label for="timeZone" class="text-xs font-medium text-muted-foreground">Time Zone *</label>
@@ -196,7 +275,8 @@
             class="input h-10 select-style bg-background text-foreground">
             <option *ngFor="let tz of timeZones" [value]="tz.value">{{ tz.label }}</option>
           </select>
-          <span *ngIf="submitted && tenantForm.get('timeZone')?.errors?.['required']"
+          <span
+            *ngIf="tenantForm.get('timeZone')?.errors?.['required'] && (tenantForm.get('timeZone')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Time zone is required.</span>
         </div>
         <div class="space-y-1.5">
@@ -205,10 +285,10 @@
             class="input h-10 select-style bg-background text-foreground">
             <option *ngFor="let c of currencies" [value]="c.value">{{ c.label }}</option>
           </select>
-          <span *ngIf="submitted && tenantForm.get('currency')?.errors?.['required']"
+          <span
+            *ngIf="tenantForm.get('currency')?.errors?.['required'] && (tenantForm.get('currency')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Currency is required.</span>
         </div>
-
       </div>
     </div>
 
@@ -219,64 +299,70 @@
       <div class="space-y-1.5">
         <label for="planId" class="text-xs font-medium text-muted-foreground">Choose Billing Plan *</label>
         <select id="planId" formControlName="planId" class="input h-10 select-style bg-background text-foreground">
-          <option *ngFor="let p of plans" [value]="p.id">{{ p.name }} ({{ p.price }})</option>
+          <option *ngFor="let p of plans" [value]="p.id">{{ p.planName }} ({{ p.price | currency }})</option>
         </select>
       </div>
     </div>
 
-    <!-- Section 3: Admin & Contact Information -->
-    <div class="space-y-4">
+    <!-- Section 3: Admin & Contact Information (create only) -->
+    <div class="space-y-4" *ngIf="!isEditMode">
       <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">3. Initial
         Administrator</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <label for="firstName" class="text-xs font-medium text-muted-foreground">Admin First Name *</label>
           <input id="firstName" type="text" formControlName="firstName" class="input h-10" placeholder="e.g. Sarah" />
-          <span *ngIf="submitted && tenantForm.get('firstName')?.errors?.['required']"
+          <span
+            *ngIf="tenantForm.get('firstName')?.errors?.['required'] && (tenantForm.get('firstName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">First name is required.</span>
         </div>
         <div class="space-y-1.5">
           <label for="lastName" class="text-xs font-medium text-muted-foreground">Admin Last Name *</label>
           <input id="lastName" type="text" formControlName="lastName" class="input h-10" placeholder="e.g. Connor" />
-          <span *ngIf="submitted && tenantForm.get('lastName')?.errors?.['required']"
+          <span
+            *ngIf="tenantForm.get('lastName')?.errors?.['required'] && (tenantForm.get('lastName')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Last name is required.</span>
         </div>
         <div class="space-y-1.5 col-span-2">
           <label for="email" class="text-xs font-medium text-muted-foreground">Admin Work Email *</label>
           <input id="email" type="email" formControlName="email" class="input h-10" placeholder="s.connor@apex.com" />
-          <span *ngIf="submitted && tenantForm.get('email')?.errors?.['required']"
+          <span *ngIf="tenantForm.get('email')?.errors?.['required'] && (tenantForm.get('email')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Email address is required.</span>
-          <span *ngIf="submitted && tenantForm.get('email')?.errors?.['email']"
+          <span *ngIf="tenantForm.get('email')?.errors?.['email'] && (tenantForm.get('email')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Please enter a valid email address.</span>
         </div>
         <div class="space-y-1.5 col-span-2">
           <label for="phone" class="text-xs font-medium text-muted-foreground">Contact Phone</label>
           <input id="phone" type="text" formControlName="phone" class="input h-10" placeholder="+44 7911 123456" />
-          <span *ngIf="submitted && tenantForm.get('phone')?.errors?.['pattern']"
+          <span *ngIf="tenantForm.get('phone')?.errors?.['pattern'] && (tenantForm.get('phone')?.touched || submitted)"
             class="text-xs text-destructive mt-1 block">Invalid phone number format.</span>
         </div>
       </div>
     </div>
 
-    <!-- Section 4: Security Password -->
-    <div class="space-y-4">
+    <!-- Section 4: Security Password (create only) -->
+    <div class="space-y-4" *ngIf="!isEditMode">
       <h3 class="text-sm font-semibold uppercase tracking-wider text-primary border-b border-border pb-1">4. Security
         Password</h3>
       <div class="space-y-1.5">
         <label for="password" class="text-xs font-medium text-muted-foreground">Initial Admin Password *</label>
         <input id="password" type="password" formControlName="password" class="input h-10" placeholder="••••••••" />
-        <span *ngIf="submitted && tenantForm.get('password')?.errors?.['required']"
+        <span
+          *ngIf="tenantForm.get('password')?.errors?.['required'] && (tenantForm.get('password')?.touched || submitted)"
           class="text-xs text-destructive mt-1 block">Password is required.</span>
-        <span *ngIf="submitted && tenantForm.get('password')?.errors?.['minlength']"
+        <span
+          *ngIf="tenantForm.get('password')?.errors?.['minlength'] && (tenantForm.get('password')?.touched || submitted)"
           class="text-xs text-destructive mt-1 block">Password must be at least 6 characters.</span>
       </div>
     </div>
 
     <!-- Submit Section -->
     <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
-      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
-      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
-        Register SaaS Tenant
+      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6"
+        [disabled]="saving">Cancel</button>
+      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8" [disabled]="saving">
+        <app-icon *ngIf="saving" name="loader" [size]="16" class="animate-spin mr-1"></app-icon>
+        {{ isEditMode ? 'Save Tenant Changes' : 'Register SaaS Tenant' }}
       </button>
     </div>
   </form>

@@ -86,7 +86,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let j of jobs" class="border-b border-border hover:bg-muted/50 cursor-pointer last:border-0">
+          <tr *ngFor="let j of jobs" (click)="openEditDrawer(j)"
+            class="border-b border-border hover:bg-muted/50 cursor-pointer last:border-0">
             <td class="p-4 align-middle">
               <div class="font-medium text-foreground">{{ j.title }}</div>
               <div class="text-xs font-mono text-muted-foreground">{{ j.id }}</div>
@@ -105,10 +106,16 @@
             <td class="p-4 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ j.engineer }}</td>
             <td class="p-4 align-middle hidden lg:table-cell text-sm text-muted-foreground">{{ j.scheduled }}</td>
             <td class="p-4 align-middle hidden xl:table-cell font-mono text-xs text-muted-foreground">{{ j.po }}</td>
-            <td class="p-4 align-middle">
-              <button type="button" class="btn btn-ghost btn-icon">
-                <app-icon name="more-horizontal" [size]="16"></app-icon>
-              </button>
+            <td class="p-4 align-middle" (click)="$event.stopPropagation()">
+              <div class="flex items-center gap-1 justify-end">
+                <button type="button" (click)="openEditDrawer(j)" class="btn btn-ghost btn-icon" title="Edit Job">
+                  <app-icon name="edit-2" [size]="16"></app-icon>
+                </button>
+                <button type="button" (click)="deleteJob(j.rawId)"
+                  class="btn btn-ghost btn-icon text-destructive hover:bg-destructive/10" title="Delete Job">
+                  <app-icon name="trash-2" [size]="16"></app-icon>
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="jobs.length === 0">
@@ -151,7 +158,8 @@
   <!-- Header -->
   <div class="p-6 border-b border-border flex items-center justify-between bg-muted/30">
     <div>
-      <h2 class="text-xl font-bold tracking-tight text-foreground">Log New Job / Task</h2>
+      <h2 class="text-xl font-bold tracking-tight text-foreground">{{ isEditMode ? 'Edit Job / Task' : 'Log New Job /
+        Task' }}</h2>
       <p class="text-xs text-muted-foreground mt-1">Register a service call, maintenance request or emergency repair.
       </p>
     </div>
@@ -257,9 +265,19 @@
     </div>
 
     <!-- Submit Section -->
-    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
-      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
-      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">Log Job Ticket</button>
+    <div class="pt-6 border-t border-border flex items-center justify-between bg-muted/10 -mx-6 -mb-6 p-6">
+      <div>
+        <button type="button" *ngIf="isEditMode" (click)="deleteJob(selectedJobId!); closeDrawer()"
+          class="btn btn-ghost text-destructive hover:bg-destructive/10 h-11 px-4">
+          Delete Job
+        </button>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+        <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+          {{ isEditMode ? 'Update Job Ticket' : 'Log Job Ticket' }}
+        </button>
+      </div>
     </div>
   </form>
 </div>

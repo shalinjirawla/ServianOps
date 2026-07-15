@@ -4,7 +4,19 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
-import { API_BASE_URL } from './core/api/service-proxies';
+import { 
+  AuthService,
+  CustomersService, 
+  CustomerTypesService, 
+  JobsService, 
+  PlansService, 
+  RolesService, 
+  SitesService, 
+  TenantsService, 
+  TradesService, 
+  UsersService,
+  API_BASE_URL 
+} from './core/api/service-proxies';
 import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -13,7 +25,17 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([jwtInterceptor])),
-    { provide: API_BASE_URL, useValue: environment.apiUrl }
+    { provide: API_BASE_URL, useValue: environment.apiUrl },
+    AuthService,
+    CustomersService,
+    CustomerTypesService,
+    JobsService,
+    PlansService,
+    RolesService,
+    SitesService,
+    TenantsService,
+    TradesService,
+    UsersService
   ]
 };
 

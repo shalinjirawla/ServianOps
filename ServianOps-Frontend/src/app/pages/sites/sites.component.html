@@ -49,9 +49,14 @@
             <span *ngIf="s.ramsRequired" class="badge badge-secondary text-[10px]"><app-icon name="shield-alert" [size]="12"></app-icon>RAMS</span>
             <span *ngIf="s.asbestosRequired" class="badge badge-secondary text-[10px]">Asbestos ✓</span>
           </div>
-          <button type="button" (click)="openEditDrawer(s); $event.stopPropagation()" class="btn btn-icon btn-ghost text-primary hover:bg-primary/10 rounded-lg h-8 w-8 inline-grid place-items-center" title="Open Site Details">
-            <app-icon name="edit-2" [size]="16"></app-icon>
-          </button>
+          <div class="flex items-center gap-1">
+            <button type="button" (click)="openEditDrawer(s); $event.stopPropagation()" class="btn btn-icon btn-ghost text-primary hover:bg-primary/10 rounded-lg h-8 w-8 inline-grid place-items-center" title="Open Site Details">
+              <app-icon name="edit-2" [size]="16"></app-icon>
+            </button>
+            <button type="button" (click)="deleteSite(s.rawId); $event.stopPropagation()" class="btn btn-icon btn-ghost text-destructive hover:bg-destructive/10 rounded-lg h-8 w-8 inline-grid place-items-center" title="Delete Site">
+              <app-icon name="trash-2" [size]="16"></app-icon>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -178,11 +183,18 @@
     </div>
 
     <!-- Submit Section -->
-    <div class="pt-6 border-t border-border flex items-center justify-end gap-3 bg-muted/10 -mx-6 -mb-6 p-6">
-      <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
-      <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
-        {{ isEditMode ? 'Update Site Details' : 'Save Site Details' }}
-      </button>
+    <div class="pt-6 border-t border-border flex items-center justify-between bg-muted/10 -mx-6 -mb-6 p-6">
+      <div>
+        <button type="button" *ngIf="isEditMode" (click)="deleteSite(selectedSiteId!); closeDrawer()" class="btn btn-ghost text-destructive hover:bg-destructive/10 h-11 px-4">
+          Delete Site
+        </button>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" (click)="closeDrawer()" class="btn btn-outline h-11 px-6">Cancel</button>
+        <button type="submit" class="btn btn-primary bg-gradient-primary shadow-elegant h-11 px-8">
+          {{ isEditMode ? 'Update Site Details' : 'Save Site Details' }}
+        </button>
+      </div>
     </div>
   </form>
 </div>
