@@ -6,24 +6,71 @@ using Microsoft.EntityFrameworkCore;
 using ServianOps_Backend.Application.Common.DTOs;
 using ServianOps_Backend.Application.TenantModule.Tenant.TenantDto;
 using ServianOps_Backend.Core.Interfaces.Repositories;
+using ServianOps_Backend.Application.Interfaces;
+using ServianOps_Backend.Core.Entities.Identity;
 
 namespace ServianOps_Backend.Application.TenantModule.Tenant
 {
     public class TenantService : ITenantService
     {
         private readonly IGenericRepository<Core.Entities.Saas.Tenant> _repository;
+        private readonly IGenericRepository<Role> _roleRepository;
+        private readonly IGenericRepository<User> _userRepository;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly IMapper _mapper;
 
-        public TenantService(IGenericRepository<Core.Entities.Saas.Tenant> repository, IMapper mapper)
+        public TenantService(
+            IGenericRepository<Core.Entities.Saas.Tenant> repository,
+            IGenericRepository<Role> roleRepository,
+            IGenericRepository<User> userRepository,
+            IPasswordHasher passwordHasher,
+            IMapper mapper)
         {
             _repository = repository;
+            _roleRepository = roleRepository;
+            _userRepository = userRepository;
+            _passwordHasher = passwordHasher;
             _mapper = mapper;
         }
 
         public async Task<StandardResponse<TenantDetailDto>> CreateTenant(CreateTenantDto dto)
         {
             var entity = _mapper.Map<Core.Entities.Saas.Tenant>(dto);
-            await _repository.AddAsync(entity);
+            
+            // Default values for required properties
+            entity.LogoUrl = string.Empty;
+            entity.TimeZone = "UTC";
+            entity.Currency = "USD";
+
+            await _repository.AddAsync(entity); // Gets Tenant Id
+
+            // Create default roles
+            var adminRole = new Role { TenantId = entity.Id, Name = "Administrator", Description = "System Administrator" };
+            var plannerRole = new Role { TenantId = entity.Id, Name = "Planner", Description = "Planner" };
+            var engineerRole = new Role { TenantId = entity.Id, Name = "Engineer", Description = "Engineer" };
+
+            await _roleRepository.AddAsync(adminRole);
+            await _roleRepository.AddAsync(plannerRole);
+            await _roleRepository.AddAsync(engineerRole);
+
+            // Hash password (default to '123qwe' if not provided)
+            var password = string.IsNullOrEmpty(dto.Password) ? "123qwe" : dto.Password;
+            var hash = _passwordHasher.HashPassword(password, out var salt);
+
+            // Create admin user using AutoMapper
+            var adminUser = _mapper.Map<User>(dto);
+            adminUser.TenantId = entity.Id;
+            adminUser.PasswordHash = hash;
+            adminUser.PasswordSalt = salt;
+            adminUser.IsActive = true;
+            adminUser.ProfileImage = string.Empty;
+            adminUser.Phone = adminUser.Phone ?? string.Empty;
+            adminUser.UserRoles = new List<UserRole>
+            {
+                new UserRole { RoleId = adminRole.Id, TenantId = entity.Id }
+            };
+            await _userRepository.AddAsync(adminUser);
+
             return StandardResponse<TenantDetailDto>.Ok(_mapper.Map<TenantDetailDto>(entity));
         }
 
