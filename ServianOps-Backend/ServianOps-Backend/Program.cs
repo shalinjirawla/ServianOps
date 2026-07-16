@@ -29,7 +29,11 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddCors(c =>
 {
-    c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    c.AddPolicy("AllowOrigin", options => options
+        .WithOrigins("http://localhost:4200", "https://localhost:4200") // Need explicit origins for credentials
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials());
 });
 
 builder.Services.AddSwaggerGen(c =>
@@ -87,7 +91,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.ContainsKey("AccessToken"))
+                {
+                    context.Token = context.Request.Cookies["AccessToken"];
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var sessionService = context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                var jtiClaim = context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                
+                if (Guid.TryParse(jtiClaim, out var jti))
+                {
+                    var isActive = await sessionService.IsSessionActiveAsync(jti);
+                    if (!isActive)
+                    {
+                        context.Fail("Session is revoked or expired.");
+                    }
+                }
+                else
+                {
+                    context.Fail("Invalid session token.");
+                }
+            }
         };
     });
 
@@ -96,6 +131,7 @@ builder.Services.AddScoped<ICurrentTenant, CurrentTenantService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IUserSessionService, ServianOps_Backend.Application.AuthModule.Auth.UserSessionService>();
 
 // Repositories
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

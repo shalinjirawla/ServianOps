@@ -32,6 +32,7 @@ namespace ServianOps_Backend.EntityFramework.Contexts
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<UserSession> UserSessions { get; set; }
 
         public DbSet<CustomerType> CustomerTypes { get; set; }
         public DbSet<Customer> Customers { get; set; }

@@ -5,6 +5,6 @@ namespace ServianOps_Backend.Application.Interfaces
 {
     public interface IJwtProvider
     {
-        string GenerateToken(UserDetailDto user, string roleName);
+        (string Token, Guid Jti) GenerateToken(UserDetailDto user, string roleName);
     }
 }

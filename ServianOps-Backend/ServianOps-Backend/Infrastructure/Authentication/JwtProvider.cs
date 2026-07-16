@@ -19,13 +19,14 @@ namespace ServianOps_Backend.Infrastructure.Authentication
             _jwtSettings = jwtSettingsOptions.Value;
         }
 
-        public string GenerateToken(UserDetailDto user, string roleName)
+        public (string Token, Guid Jti) GenerateToken(UserDetailDto user, string roleName)
         {
+            var jti = Guid.NewGuid();
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, jti.ToString()),
                 
                 // Custom Multi-Tenant claims
                 new Claim("tenant_id", user.TenantId?.ToString() ?? ""),
@@ -44,7 +45,7 @@ namespace ServianOps_Backend.Infrastructure.Authentication
                 signingCredentials: creds
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return (new JwtSecurityTokenHandler().WriteToken(token), jti);
         }
     }
 }
