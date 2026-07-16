@@ -2,12 +2,15 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using ServianOps_Backend.Application.TenantModule.Tenant;
 using ServianOps_Backend.Application.TenantModule.Tenant.TenantDto;
 using ServianOps_Backend.Application.Interfaces;
 using ServianOps_Backend.Application.AuthModule.Auth.AuthDto;
 using ServianOps_Backend.Application.UserModule.User;
 using ServianOps_Backend.Application.Common.DTOs;
+using ServianOps_Backend.Infrastructure.Authentication;
 
 namespace ServianOps_Backend.Controllers
 {
@@ -18,29 +21,16 @@ namespace ServianOps_Backend.Controllers
         private readonly ITenantService _tenantService;
         private readonly IUserService _userService;
         private readonly IJwtProvider _jwtProvider;
+        private readonly IUserSessionService _sessionService;
+        private readonly JwtSettings _jwtSettings;
 
-        public AuthController(ITenantService tenantService, IUserService userService, IJwtProvider jwtProvider)
+        public AuthController(ITenantService tenantService, IUserService userService, IJwtProvider jwtProvider, IUserSessionService sessionService, IOptions<JwtSettings> jwtSettings)
         {
             _tenantService = tenantService;
             _userService = userService;
             _jwtProvider = jwtProvider;
-        }
-
-        [HttpPost("register-tenant")]
-        [AllowAnonymous]
-        [ProducesResponseType(typeof(StandardResponse<long>), 200)]
-        public async Task<IActionResult> RegisterTenant([FromBody] CreateTenantDto dto)
-        {
-            try
-            {
-                var tenantResult = await _tenantService.CreateTenant(dto);
-                if (!tenantResult.Success) return Ok(StandardResponse<long>.Error(tenantResult.Message));
-                return Ok(StandardResponse<long>.Ok(tenantResult.Data.Id, "Tenant registered successfully."));
-            }
-            catch (Exception ex)
-            {
-                return Ok(StandardResponse<long>.Error(ex.Message));
-            }
+            _sessionService = sessionService;
+            _jwtSettings = jwtSettings.Value;
         }
 
         [HttpPost("login")]
@@ -50,7 +40,6 @@ namespace ServianOps_Backend.Controllers
         {
             long? tenantId = null;
 
-            // 1. Resolve Tenant if TenancyName is provided
             if (!string.IsNullOrWhiteSpace(dto.TenancyName))
             {
                 var tenantResult = await _tenantService.GetByTenancyName(dto.TenancyName);
@@ -61,24 +50,17 @@ namespace ServianOps_Backend.Controllers
                 tenantId = tenantResult.Data.Id;
             }
 
-            // 2. Validate Credentials
             var validationResult = await _userService.ValidateCredentials(dto.Email, dto.Password, tenantId);
             if (!validationResult.Success || !validationResult.Data)
             {
                 return Ok(StandardResponse<AuthResponseDto>.Error("Invalid Email or Password."));
             }
 
-            // 3. Generate Token
             var userResult = await _userService.GetUserByEmailAndTenantId(dto.Email, tenantId);
             var user = userResult.Data;
             
-            // 4. Fetch Role
-            var role = "User"; 
-            if (tenantId == null)
-            {
-                role = "SuperAdmin";
-            }
-            else 
+            var role = tenantId == null ? "SuperAdmin" : "User"; 
+            if (tenantId != null)
             {
                  var fetchedRoleResult = await _userService.GetUserRoleName(user.Id);
                  if (fetchedRoleResult.Success && !string.IsNullOrEmpty(fetchedRoleResult.Data))
@@ -87,87 +69,186 @@ namespace ServianOps_Backend.Controllers
                  }
             }
 
-            var token = _jwtProvider.GenerateToken(user, role);
+            var (accessToken, jti) = _jwtProvider.GenerateToken(user, role);
+            
+            // Generate Refresh Token
+            var refreshTokenBytes = new byte[64];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(refreshTokenBytes);
+            }
+            var refreshToken = Convert.ToBase64String(refreshTokenBytes);
+            
+            var accessTokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
+
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+
+            await _sessionService.CreateSessionAsync(user.Id, tenantId, jti, refreshToken, accessTokenExpiry, refreshTokenExpiry, ipAddress, userAgent);
+
+            SetTokenCookies(accessToken, refreshToken, accessTokenExpiry, refreshTokenExpiry);
 
             var authResponse = new AuthResponseDto
             {
-                Token = token,
                 UserId = user.Id,
                 TenantId = tenantId,
                 Email = user.Email,
                 Role = role
             };
-            return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse));
+            
+            return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse, "Login successful."));
+        }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(StandardResponse<AuthResponseDto>), 200)]
+        public async Task<IActionResult> Refresh()
+        {
+            var refreshToken = Request.Cookies["RefreshToken"];
+            
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return Unauthorized(StandardResponse<AuthResponseDto>.Error("No refresh token provided."));
+            }
+
+            var session = await _sessionService.GetActiveSessionByRefreshTokenAsync(refreshToken);
+            
+            if (session == null || session.RefreshTokenExpiry < DateTime.UtcNow)
+            {
+                // Replay attack detection or expired session
+                // We don't know the exact user if session is null (unless we decode the access token)
+                // For a replay attack, we would ideally revoke all sessions, but here we just deny access.
+                return Unauthorized(StandardResponse<AuthResponseDto>.Error("Invalid or expired refresh token."));
+            }
+
+            // Revoke the old session to rotate the refresh token
+            await _sessionService.RevokeSessionAsync(session.Jti, "Refreshed");
+
+            // Generate New Tokens
+            var userResult = await _userService.GetUserById(session.UserId);
+            var user = userResult.Data;
+            var role = session.TenantId == null ? "SuperAdmin" : "User";
+            if (session.TenantId != null)
+            {
+                 var fetchedRoleResult = await _userService.GetUserRoleName(user.Id);
+                 if (fetchedRoleResult.Success && !string.IsNullOrEmpty(fetchedRoleResult.Data))
+                 {
+                     role = fetchedRoleResult.Data;
+                 }
+            }
+
+            var (newAccessToken, newJti) = _jwtProvider.GenerateToken(user, role);
+            
+            var newRefreshTokenBytes = new byte[64];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(newRefreshTokenBytes);
+            }
+            var newRefreshToken = Convert.ToBase64String(newRefreshTokenBytes);
+            
+            var accessTokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+
+            await _sessionService.CreateSessionAsync(user.Id, session.TenantId, newJti, newRefreshToken, accessTokenExpiry, refreshTokenExpiry, ipAddress, userAgent);
+
+            SetTokenCookies(newAccessToken, newRefreshToken, accessTokenExpiry, refreshTokenExpiry);
+
+            var authResponse = new AuthResponseDto
+            {
+                UserId = user.Id,
+                TenantId = session.TenantId,
+                Email = user.Email,
+                Role = role
+            };
+            
+            return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse, "Token refreshed successfully."));
         }
 
         [HttpPost("logout")]
         [Authorize]
         [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            // For pure JWT, logout is handled client-side by destroying the token.
-            // If tracking refresh tokens, we would invalidate it in DB here.
+            var jtiClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+            if (Guid.TryParse(jtiClaim, out var jti))
+            {
+                await _sessionService.RevokeSessionAsync(jti, "User Logout");
+            }
+            
+            DeleteTokenCookies();
             return Ok(StandardResponse<bool>.Ok(true, "Logged out successfully."));
         }
 
-        [HttpPost("refresh")]
+        [HttpPost("logout-all")]
+        [Authorize]
+        [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
+        public async Task<IActionResult> LogoutAll()
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (long.TryParse(userIdClaim, out var userId))
+            {
+                await _sessionService.RevokeAllSessionsForUserAsync(userId, "Logout All Devices");
+            }
+            
+            DeleteTokenCookies();
+            return Ok(StandardResponse<bool>.Ok(true, "Logged out from all devices successfully."));
+        }
+
+        [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(StandardResponse<AuthResponseDto>), 200)]
-        public async Task<IActionResult> Refresh()
+        public async Task<IActionResult> Me()
         {
-            try
+            var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value 
+                              ?? User.FindFirst("user_id")?.Value;
+            var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+            var emailClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value;
+            var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            long.TryParse(userIdClaim, out var userId);
+            long? tenantId = string.IsNullOrEmpty(tenantIdClaim) ? (long?)null : long.Parse(tenantIdClaim);
+
+            var authResponse = new AuthResponseDto
             {
-                var userIdClaim = User.FindFirst("user_id")?.Value;
-                var tenantIdClaim = User.FindFirst("tenant_id")?.Value;
+                UserId = userId,
+                TenantId = tenantId,
+                Email = emailClaim ?? "",
+                Role = roleClaim ?? "User"
+            };
 
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Ok(StandardResponse<AuthResponseDto>.Error("User unauthorized or invalid session."));
-                }
+            return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse, "User profile retrieved."));
+        }
 
-                long userId = long.Parse(userIdClaim);
-                long? tenantId = string.IsNullOrEmpty(tenantIdClaim) || tenantIdClaim == "null" || tenantIdClaim == ""
-                    ? (long?)null 
-                    : long.Parse(tenantIdClaim);
-
-                var userResult = await _userService.GetUserById(userId);
-                if (!userResult.Success || userResult.Data == null)
-                {
-                    return Ok(StandardResponse<AuthResponseDto>.Error("User not found or inactive."));
-                }
-
-                var user = userResult.Data;
-
-                var role = "User";
-                if (tenantId == null)
-                {
-                    role = "SuperAdmin";
-                }
-                else
-                {
-                     var fetchedRoleResult = await _userService.GetUserRoleName(user.Id);
-                     if (fetchedRoleResult.Success && !string.IsNullOrEmpty(fetchedRoleResult.Data))
-                     {
-                         role = fetchedRoleResult.Data;
-                     }
-                }
-
-                var token = _jwtProvider.GenerateToken(user, role);
-
-                var authResponse = new AuthResponseDto
-                {
-                    Token = token,
-                    UserId = user.Id,
-                    TenantId = tenantId,
-                    Email = user.Email,
-                    Role = role
-                };
-                return Ok(StandardResponse<AuthResponseDto>.Ok(authResponse, "Token refreshed successfully."));
-            }
-            catch (Exception ex)
+        private void SetTokenCookies(string accessToken, string refreshToken, DateTime accessTokenExpiry, DateTime refreshTokenExpiry)
+        {
+            var cookieOptions = new CookieOptions
             {
-                return Ok(StandardResponse<AuthResponseDto>.Error($"Refresh failed: {ex.Message}"));
-            }
+                HttpOnly = true,
+                Secure = true, // Must be true for SameSite=None
+                SameSite = SameSiteMode.None, // Allows cross-origin (localhost:4200 to localhost:7224) requests to send cookies
+                Expires = accessTokenExpiry
+            };
+            
+            Response.Cookies.Append("AccessToken", accessToken, cookieOptions);
+
+            var refreshCookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = refreshTokenExpiry
+            };
+            
+            Response.Cookies.Append("RefreshToken", refreshToken, refreshCookieOptions);
+        }
+
+        private void DeleteTokenCookies()
+        {
+            Response.Cookies.Delete("AccessToken");
+            Response.Cookies.Delete("RefreshToken");
         }
 
         [HttpPost("forgot-password")]
@@ -175,7 +256,6 @@ namespace ServianOps_Backend.Controllers
         [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public IActionResult ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
-            // Placeholder for email sending logic
             return Ok(StandardResponse<bool>.Ok(true, "If the email and company code match, a reset link will be sent."));
         }
 
@@ -184,7 +264,6 @@ namespace ServianOps_Backend.Controllers
         [ProducesResponseType(typeof(StandardResponse<bool>), 200)]
         public IActionResult ResetPassword([FromBody] ResetPasswordDto dto)
         {
-            // Placeholder for password reset logic
             return Ok(StandardResponse<bool>.Ok(false, "Password reset functionality is under construction."));
         }
     }

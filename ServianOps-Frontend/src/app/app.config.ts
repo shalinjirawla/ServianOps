@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
@@ -18,6 +18,12 @@ import {
   API_BASE_URL 
 } from './core/api/service-proxies';
 import { environment } from '../environments/environment';
+import { firstValueFrom } from 'rxjs';
+import { AuthService as AppAuthService } from './core/services/auth.service';
+
+function initializeApp(authService: AppAuthService) {
+  return () => firstValueFrom(authService.initSession());
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +32,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([jwtInterceptor])),
     { provide: API_BASE_URL, useValue: environment.apiUrl },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeApp,
+      deps: [AppAuthService],
+      multi: true
+    },
     AuthService,
     CustomersService,
     CustomerTypesService,

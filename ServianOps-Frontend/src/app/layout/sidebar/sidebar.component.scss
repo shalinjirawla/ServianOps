@@ -1,3 +1,13 @@
 :host {
   display: contents;
 }
+
+/* Hide scrollbar for sidebar content but keep functionality */
+.overflow-y-auto {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

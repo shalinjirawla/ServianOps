@@ -8,7 +8,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { LoginDto, UserSession } from '../../core/models/auth.models';
-import { TokenService } from '../../core/services/token.service';
 type AuthView = 'LOGIN' | 'SIGNUP' | 'FORGOT' | 'OTP';
 @Component({
   selector: 'app-login',
@@ -21,7 +20,6 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private toast: ToastService,
-    private tokenService: TokenService,
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly storage: StorageService,
